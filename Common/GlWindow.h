@@ -1,0 +1,26 @@
+#pragma once // Check ifndef vs pragma
+#include "Core\ShaderLoader.h"
+#include "Core\Timer.h"
+#include "Common\Camera.h"
+#include "Common\ModelGenerator.h"
+#include "Common\KinectCamera.h"
+#include "Primitives\Vertex.h"
+#include <iostream>
+#include <gl\glew.h>
+#include <gl\freeglut.h>
+#include <glm\glm.hpp>
+#include <glm\gtx\transform.hpp>
+#include <glm\gtc\matrix_transform.hpp>
+
+class GlWindow {
+public:
+  GlWindow(int argc, char **argv);
+  ~GlWindow();
+  void show(void);
+protected:
+  static void renderCallback();
+  static void displayCallback();
+  static void mouseFuncCallback(int button, int state, int x, int y);
+  static void mouseMotionCallback(int x, int y);
+  static void closeCallback();
+};
