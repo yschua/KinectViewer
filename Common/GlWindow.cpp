@@ -36,6 +36,7 @@ void GlWindow::show()
   glutDisplayFunc(renderCallback);
   glutMouseFunc(mouseFuncCallback);
   glutMotionFunc(mouseMotionCallback);
+  glutKeyboardFunc(keyboardFuncCallback);
   glutCloseFunc(closeCallback);
   glutMainLoop();
 }
@@ -85,6 +86,28 @@ void GlWindow::mouseMotionCallback(int x, int y)
 {
   camera.mouseUpdate(glm::vec2(x, y));
   renderCallback();
+}
+
+void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
+{
+  switch (key) {
+    case 'w': {
+      camera.moveCameraPosition(0, 0, 1);
+      break;
+    }
+    case 'a': {
+      camera.moveCameraPosition(1, 0, 0);
+      break;
+    }
+    case 's': {
+      camera.moveCameraPosition(0, 0, -1);
+      break;
+    }
+    case 'd': {
+      camera.moveCameraPosition(-1, 0, 0);
+      break;
+    }
+  }
 }
 
 void GlWindow::closeCallback()

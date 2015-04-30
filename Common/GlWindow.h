@@ -22,5 +22,6 @@ protected:
   static void displayCallback();
   static void mouseFuncCallback(int button, int state, int x, int y);
   static void mouseMotionCallback(int x, int y);
+  static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
   static void closeCallback();
 };
