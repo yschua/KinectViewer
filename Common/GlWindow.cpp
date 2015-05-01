@@ -15,7 +15,8 @@ GlWindow::GlWindow(int argc, char *argv[])
   glutCreateWindow("KinectViewer");
   glewInit();
   glEnable(GL_DEPTH_TEST);
-  glPointSize(2.0f);
+  glEnable(GL_POINT_SMOOTH);
+  //glPointSize(1.0f);
   
   model.generate();
 

@@ -17,6 +17,7 @@ KinectCamera::KinectCamera() :
 
   colorBuffer = new RGBQUAD[COLOR_WIDTH * COLOR_HEIGHT];
   depthBuffer = new UINT16[DEPTH_WIDTH * DEPTH_HEIGHT];
+  depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT]; // this can overwrite depthBuffer
   cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
   colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
 }
@@ -69,6 +70,7 @@ void KinectCamera::update()
       hr = depthFrame->CopyFrameDataToArray(bufferSize, depthBuffer);
       checkError(hr, "IDepthFrame::CopyFrameDataToArray()");
     }
+    computeDepthDifferential();
     SafeRelease(depthFrame);
     SafeRelease(depthFrameRef);
 
@@ -90,6 +92,9 @@ void KinectCamera::update()
     bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
     mapper->MapDepthFrameToColorSpace(bufferSize, depthBuffer, bufferSize, colorSpacePoints);
     mapper->MapDepthFrameToCameraSpace(bufferSize, depthBuffer, bufferSize, cameraSpacePoints);
+
+    // Custom mapping
+    // TODO
   }
 
   
@@ -117,6 +122,16 @@ ColorSpacePoint *KinectCamera::getColorSpacePoints()
 {
   return colorSpacePoints;
 }
+
+void KinectCamera::computeDepthDifferential()
+{
+  depthDifferential[0] = depthBuffer[0];
+  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
+    depthDifferential[i] = (depthBuffer[i] - depthBuffer[i - 1]);
+  }
+}
+
+
 
 void KinectCamera::checkError(HRESULT hr, char *name)
 {

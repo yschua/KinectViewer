@@ -16,16 +16,15 @@ class KinectCamera
   IColorFrame *colorFrame;
   CameraSpacePoint *cameraSpacePoints;
   ColorSpacePoint *colorSpacePoints;
-public:
-  //bool frameReady;
   RGBQUAD *colorBuffer;
   UINT16 *depthBuffer;
-
+  INT16 *depthDifferential;
+public:
   const int COLOR_WIDTH;
   const int COLOR_HEIGHT;
   const int DEPTH_WIDTH;
   const int DEPTH_HEIGHT;
-
+public:
   KinectCamera();
   ~KinectCamera();
   void update();
@@ -33,7 +32,8 @@ public:
   UINT16 *getDepthBuffer();
   CameraSpacePoint *getCameraSpacePoints();
   ColorSpacePoint *getColorSpacePoints();
-protected:  
+protected:
+  void computeDepthDifferential();
   static void checkError(HRESULT hr, char *name);
 };
 
