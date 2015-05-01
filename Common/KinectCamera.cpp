@@ -65,7 +65,7 @@ void KinectCamera::update()
     hr = depthFrameRef->AcquireFrame(&depthFrame);
     if (SUCCEEDED(hr)) {
       // Retrieve depth data
-      //hr = depthFrame->AccessUnderlyingBuffer(&bufferSize, &depthBuffer);
+      //hr = depthFrame->AcessUnderlyingBuffer(&bufferSize, &depthBuffer);
       bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
       hr = depthFrame->CopyFrameDataToArray(bufferSize, depthBuffer);
       checkError(hr, "IDepthFrame::CopyFrameDataToArray()");
@@ -96,8 +96,6 @@ void KinectCamera::update()
     // Custom mapping
     // TODO
   }
-
-  
 
   //if (depthBuffer[100] != 0) {
   //  std::cout << "Ready" << std::endl;

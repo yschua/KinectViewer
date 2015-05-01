@@ -6,6 +6,7 @@ GLuint program;
 Camera camera;
 KinectCamera kinectCamera;
 ModelGenerator model;
+Core::Timer timer;
 
 GlWindow::GlWindow(int argc, char *argv[])
 {
@@ -52,8 +53,10 @@ void GlWindow::renderCallback()
   //std::cout << "Capture" << std::endl;
   //model.updateModel(kinectCamera.colorBuffer);
   //model.updateDepthFrame(kinectCamera.depthBuffer);
-  
+  timer.startTimer();
   model.updatePointCloud(kinectCamera);
+  timer.stopTimer();
+  std::cout << "Point cloud vertex array update time: " << timer.getElapsedTime() << std::endl;
   //once = false; // temporary
   //}
   
