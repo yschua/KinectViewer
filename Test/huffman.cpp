@@ -22,8 +22,6 @@ struct SimpleNode {
   SimpleNode *left;
   SimpleNode *right;
   SimpleNode() : c('\0'), left(NULL), right(NULL) {}
-  SimpleNode(char c) : c(c), left(NULL), right(NULL) {}
-  SimpleNode(SimpleNode *left, SimpleNode *right) : c('\0'), left(left), right(right) {}
 };
 
 struct CmpNodePtr {
