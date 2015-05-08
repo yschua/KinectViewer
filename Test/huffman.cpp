@@ -93,10 +93,8 @@ void reconstructHuffmanTree(SimpleNode *&node, std::string &encodedTree)
 
 void reconstructHuffmanTree(Node *&node, boost::dynamic_bitset<BYTE> &data)
 {
-  //UINT lsb = data.size() - 1;
   node = new Node();
   //std::cout << "Data stream: " << data << std::endl;
-  //std::cout << "Current bit: " << data[lsb] << std::endl;
   if (data[0] == 0) {
     if (node->left == NULL) {
       data >>= 1;
@@ -111,6 +109,8 @@ void reconstructHuffmanTree(Node *&node, boost::dynamic_bitset<BYTE> &data)
     return;
   } else {
     char ch = 0;
+    // extract 8 bits from the bit stream bit-by-bit to find out the character
+    // perhaps this could be done more elegantly
     for (UINT i = 0; i < 8; i++) {
       ch <<= 1;
       data >>= 1;
@@ -132,8 +132,9 @@ int main()
   //std::string s = "aabcdef";
   //std::string s = "the quick brown fox jumps over the lazy dog";
   //std::string s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
-  std::string s = "testtestesttest test string!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! testing repeating characters!!!!!!!!!!";
-
+  //std::string s = "testtestesttest test string!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! testing repeating characters!!!!!!!!!!";
+  std::string s = "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaazzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzzz";
+  
   // find frequency of characters
   std::map<char, int> charFreq;
   for (UINT i = 0; i < s.length(); i++) {
@@ -183,10 +184,12 @@ int main()
   huffmanEncodedMessage += huffmanCodes[4]; // add pseudo EOF to end
   std::reverse(huffmanEncodedMessage.begin(), huffmanEncodedMessage.end());
   //std::cout << "Message encoded: " << huffmanEncodedMessage << std::endl;
-  std::cout << "Original message size: " << s.length() * 8 << " bits." << std::endl;
+  UINT uncompressedSize, compressedSize;
+  std::cout << "Original message size: " << (uncompressedSize = s.length() * 8) << " bits." << std::endl;
   std::cout << "Message size after huffman encoding: " << huffmanEncodedMessage.length() << " bits" << std::endl;
   std::cout << "Header size: " << huffmanTreeEncoded.length() << " bits" << std::endl;
-  std::cout << "Total size: " << huffmanEncodedMessage.length() + huffmanTreeEncoded.length() << " bits" << std::endl;
+  std::cout << "Total size: " << (compressedSize = huffmanEncodedMessage.length() + huffmanTreeEncoded.length()) << " bits" << std::endl;
+  std::cout << "Compression ratio: " << (double)uncompressedSize / compressedSize << std::endl;
 
   // convert message and huffman tree string to bit array
   typedef boost::dynamic_bitset<BYTE> Bitset;
