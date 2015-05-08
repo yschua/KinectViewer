@@ -131,13 +131,15 @@ int main()
   //std::string s = "aaaaaabccccccddeeeee";
   //std::string s = "aabcdef";
   //std::string s = "the quick brown fox jumps over the lazy dog";
-  std::string s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+  //std::string s = "Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla pariatur. Excepteur sint occaecat cupidatat non proident, sunt in culpa qui officia deserunt mollit anim id est laborum.";
+  std::string s = "testtestesttest test string!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!! testing repeating characters!!!!!!!!!!";
 
   // find frequency of characters
   std::map<char, int> charFreq;
   for (UINT i = 0; i < s.length(); i++) {
     charFreq[s[i]]++;
   }
+  charFreq[4] = 1; // pseudo EOF
 
   // store in min heap
   std::priority_queue<Node *, std::vector<Node *>, CmpNodePtr> minHeap;
@@ -178,6 +180,7 @@ int main()
   for (UINT i = 0; i < s.length(); i++) {
     huffmanEncodedMessage += huffmanCodes[s[i]];
   }
+  huffmanEncodedMessage += huffmanCodes[4]; // add pseudo EOF to end
   std::reverse(huffmanEncodedMessage.begin(), huffmanEncodedMessage.end());
   //std::cout << "Message encoded: " << huffmanEncodedMessage << std::endl;
   std::cout << "Original message size: " << s.length() * 8 << " bits." << std::endl;
@@ -206,24 +209,18 @@ int main()
   //std::cout << "Remaining bit stream: " << transmitData << std::endl;
   Node *head = reconstructedTree;
   Node *current = head;
-  while (!transmitData.empty()) { // use pseudo EOF
-    if (transmitData[0] == 0) {
-      if (current->left->c != '\0') {
-        std::cout << current->left->c;
-        current = head;
-      } else {
-        current = current->left;
-      }
+  bool pseudoEOF = false;
+  while (!pseudoEOF) {
+    char ch = (transmitData[0] == 0) ? current->left->c : current->right->c;
+    if (ch == 4) {
+      pseudoEOF = true;
+    } else if (ch != '\0') {
+      std::cout << ch;
+      current = head;
     } else {
-      if (current->right->c != '\0') {
-        std::cout << current->right->c;
-        current = head;
-      } else {
-        current = current->right;
-      }
+      current = (transmitData[0] == 0) ? current->left : current->right;
     }
     transmitData >>= 1;
-    transmitData.pop_back();
   }
   std::cout << std::endl;
 
