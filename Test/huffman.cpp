@@ -5,7 +5,10 @@
 #include <map>
 #include <functional>
 #include <string>
+#include <bitset>
+#include <boost\dynamic_bitset.hpp>
 typedef unsigned int UINT;
+typedef unsigned char BYTE;
 
 struct Node {
   int freq;
@@ -31,11 +34,19 @@ struct CmpNodePtr {
   }
 };
 
-void getHuffmanCode(Node *node, std::string code, std::map<char, std::string> &huffmanCodes, std::string &huffmanTreeEncoded) {
+std::string getASCII(char c)
+{
+  std::bitset<8> ascii(c);
+  return ascii.to_string();
+}
+
+void getHuffmanCode(Node *node, std::string code, std::map<char, std::string> &huffmanCodes, std::string &huffmanTreeEncoded)
+{
   //std::cout << "entering node " << node->c << node->freq << std::endl;
   if (node->left == NULL && node->right == NULL) {
     huffmanTreeEncoded += "1";
-    huffmanTreeEncoded += node->c;
+    //huffmanTreeEncoded += node->c;
+    huffmanTreeEncoded += getASCII(node->c);
     std::cout << node->c << ": " << code << std::endl;
     huffmanCodes[node->c] = code;
   } else {
@@ -52,7 +63,8 @@ void getHuffmanCode(Node *node, std::string code, std::map<char, std::string> &h
   return;
 }
 
-void reconstructHuffmanTree(SimpleNode *&node, std::string &encodedTree) {
+void reconstructHuffmanTree(SimpleNode *&node, std::string &encodedTree)
+{
   //std::cout << "Reading: " << encodedTree[0] << std::endl;
   node = new SimpleNode();
   if (encodedTree[0] == '0') {
@@ -78,11 +90,30 @@ void reconstructHuffmanTree(SimpleNode *&node, std::string &encodedTree) {
   }
 }
 
+void reconstructHuffmanTree(SimpleNode *&node, boost::dynamic_bitset<BYTE> &data)
+{
+  node = new SimpleNode();
+  if (data[0] == 0) {
+    if (node->left == NULL) {
+      data <<= 1;
+      reconstructHuffmanTree(node->left, data);
+    }
+    if (node->right == NULL) {
+      data <<= 1;
+      reconstructHuffmanTree(node->right, data);
+    }
+    return;
+  } else {
+
+  }
+}
+
 int main()
 {
   //std::string s = "aaaaabbbbbbbbbccccccccccccdddddddddddddeeeeeeeeeeeeeeeefffffffffffffffffffffffffffffffffffffffffffff";
   //std::string s = "eebbeecdebeeebecceeeddebbbeceedebeeddeeeecceeeedeeedeeebeedeceedebeeedeceeedebee";
-  std::string s = "aabcdef";
+  std::string s = "aaaaaabccccccddeeeee";
+  //std::string s = "aabcdef";
   std::cout << "Original string size: " << s.length() * 8 << " bits." << std::endl;
 
   // find frequency of characters
@@ -129,12 +160,27 @@ int main()
   for (UINT i = 0; i < s.length(); i++) {
     huffmanEncodedMessage += huffmanCodes[s[i]];
   }
-  UINT messageSize, headerSize;
-  std::cout << "Message size after huffman encoding: " << (messageSize = huffmanEncodedMessage.length()) << " bits" << std::endl;
-  std::cout << "Header size: " << (headerSize = huffmanTreeEncoded.length() - huffmanCodes.size() + (huffmanCodes.size() * 8)) << " bits" << std::endl;
-  std::cout << "Total size: " << messageSize + headerSize << " bits" << std::endl;
+  std::cout << "Message encoded: " << huffmanEncodedMessage << std::endl;
+  std::cout << "Message size after huffman encoding: " << huffmanEncodedMessage.length() << " bits" << std::endl;
+  std::cout << "Header size: " << huffmanTreeEncoded.length() << " bits" << std::endl;
+  std::cout << "Total size: " << huffmanEncodedMessage.length() + huffmanTreeEncoded.length() << " bits" << std::endl;
 
-  // reconstruct huffman tree
+  // convert message and huffman tree string to bit array
+  typedef boost::dynamic_bitset<BYTE> Bitset;
+  Bitset transmitData(huffmanTreeEncoded + huffmanEncodedMessage);
+  std::cout << "Data to transmit: " << transmitData << std::endl;
+
+  //std::vector<unsigned char> bytes;
+  //boost::to_block_range(transmitData, std::back_inserter(bytes));
+  //unsigned char *byteArray = &bytes[0];
+  
+  // reconstruct huffman tree from bitset
+  SimpleNode *reconstructedTree = NULL;
+
+
+
+  /*
+  // reconstruct huffman tree from string representation
   SimpleNode *reconstructedTree = NULL;
   reconstructHuffmanTree(reconstructedTree, huffmanTreeEncoded);
 
@@ -160,6 +206,7 @@ int main()
     }
   }
   std::cout << std::endl;
+  */
 
   return 0;
 }
