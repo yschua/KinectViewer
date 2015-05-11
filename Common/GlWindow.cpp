@@ -56,7 +56,7 @@ void GlWindow::renderCallback()
   timer.startTimer();
   model.updatePointCloud(kinectCamera);
   timer.stopTimer();
-  std::cout << "Point cloud vertex array update time: " << timer.getElapsedTime() << std::endl;
+  std::cout << "Point cloud vertex array update time: " << timer.getElapsedTime() / 1000 << std::endl;
   //once = false; // temporary
   //}
   

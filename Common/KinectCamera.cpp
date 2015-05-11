@@ -51,7 +51,7 @@ void KinectCamera::update()
 {
   hr = reader->AcquireLatestFrame(&frame);
   if (SUCCEEDED(hr)) {
-    UINT bufferSize = 0;
+    UINT bufferSize;
 
     // Acquire frame reference
     hr = frame->get_DepthFrameReference(&depthFrameRef);
@@ -112,6 +112,11 @@ UINT16 *KinectCamera::getDepthBuffer()
   return depthBuffer;
 }
 
+INT16 *KinectCamera::getDepthDifferential()
+{
+  return depthDifferential;
+}
+
 CameraSpacePoint *KinectCamera::getCameraSpacePoints()
 {
   return cameraSpacePoints;
@@ -128,8 +133,6 @@ void KinectCamera::computeDepthDifferential()
     depthDifferential[i] = (depthBuffer[i] - depthBuffer[i - 1]);
   }
 }
-
-
 
 void KinectCamera::checkError(HRESULT hr, char *name)
 {

@@ -4,6 +4,7 @@
 #include <glm\gtx\transform.hpp>
 #include <glm\gtc\matrix_transform.hpp>
 
+// OpenGL Camera 
 class Camera {
   glm::vec3 position;
   glm::vec3 viewDirection;

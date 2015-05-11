@@ -1,3 +1,4 @@
+// Disclaimer: no memory deallocation here so memory leaks are certain!
 #include <iostream>
 #include <algorithm>
 #include <vector>

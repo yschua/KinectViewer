@@ -30,6 +30,7 @@ public:
   void update();
   RGBQUAD *getColorBuffer();
   UINT16 *getDepthBuffer();
+  INT16 *getDepthDifferential();
   CameraSpacePoint *getCameraSpacePoints();
   ColorSpacePoint *getColorSpacePoints();
 protected:

@@ -28,7 +28,6 @@ PointCloud ModelGenerator::getModel()
 
 void ModelGenerator::updateModel(const RGBQUAD *colorBuffer)
 {
-
   timer.startTimer();
   int smallIndex;
   int modelIndex = 0;

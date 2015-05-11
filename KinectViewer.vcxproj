@@ -55,7 +55,7 @@
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
-      <SubSystem>Console</SubSystem>
+      <SubSystem>NotSet</SubSystem>
       <AdditionalLibraryDirectories>D:\fyp\KinectViewer\packages\nupengl.core.0.0.0.1\build\native\lib\x64\v120</AdditionalLibraryDirectories>
       <AdditionalDependencies>Kinect20.lib;freeglut.lib;glew32.lib;kernel32.lib;user32.lib;gdi32.lib;winspool.lib;comdlg32.lib;advapi32.lib;shell32.lib;ole32.lib;oleaut32.lib;uuid.lib;odbc32.lib;odbccp32.lib;%(AdditionalDependencies)</AdditionalDependencies>
     </Link>
@@ -87,11 +87,13 @@
     <ClCompile Include="Common\KinectCamera.cpp" />
     <ClCompile Include="Common\ModelGenerator.cpp" />
     <ClCompile Include="Core\Timer.cpp" />
-    <ClCompile Include="Test\huffman.cpp" />
+    <ClCompile Include="Common\HuffmanCompressor.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\Camera.h" />
     <ClInclude Include="Common\KinectCamera.h" />
+    <ClInclude Include="Common\HuffmanCompressor.h" />
     <ClInclude Include="Primitives\PointCloud.h" />
     <ClInclude Include="Core\ShaderLoader.h" />
     <ClInclude Include="Primitives\Vertex.h" />
