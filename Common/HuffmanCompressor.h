@@ -9,7 +9,6 @@
 #include <boost\dynamic_bitset.hpp>
 #include <Kinect.h>
 
-
 // Huffman tree node only works for depth differential values at the moment.
 // The differential values don't use up all 16 bits so perhaps the encoded tree
 // does not need to store "value" as the full 16 bits.
@@ -42,6 +41,7 @@ class HuffmanCompressor {
   std::map<INT16, std::string> huffmanCodes;
   Bitset transmitData;
   const INT16 *diffData;
+  UINT transmitDataIndex;
 public:
   HuffmanCompressor();
   ~HuffmanCompressor();

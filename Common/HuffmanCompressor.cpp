@@ -64,23 +64,29 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   timer.stopTimer();
   std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
+
   // Convert data to bit array
   timer.startTimer();
   transmitData = Bitset(encodedData + encodedHuffmanTree);
   timer.stopTimer();
   std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
+  // Deallocate memory
+
   std::cout << std::endl;
 }
 
 void HuffmanCompressor::decompress()
 {
+  transmitDataIndex = 0;
+
   // Reconstruct Huffman tree
   Node *huffmanTree = NULL;
   timer.startTimer();
   reconstructHuffmanTree(huffmanTree);
-  transmitData >>= 1; // dispose last bit
-  transmitData.pop_back();
+  ++transmitDataIndex; // dispose last bit
+  //transmitData >>= 1; // dispose last bit
+  //transmitData.pop_back();
   timer.stopTimer();
   std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
@@ -88,25 +94,33 @@ void HuffmanCompressor::decompress()
 
   // Decode data values
   timer.startTimer();
-  INT16 depthDiff[512 * 424];
-  UINT i = 0;
+  INT16 depthDiff[512 * 424]; // temp
+  UINT i = 0; // temp
   Node *head = huffmanTree;
   Node *current = head;
   bool pseudoEOF = false;
   while (!pseudoEOF) {
-    INT16 value = (transmitData[0 ] == 0) ? current->left->value : current->right->value;
+    //timer.startTimer();
+    INT16 value = (transmitData[transmitDataIndex] == 0) ? current->left->value : current->right->value;
     if (value == INT16_MAX) {
       pseudoEOF = true;
     } else if (value != INT16_MIN) {
       depthDiff[i++] = value;
+      //std::cout << "i: " << i << " value: " << value << std::endl;
       current = head;
     } else {
-      current = (transmitData[0] == 0) ? current->left : current->right;
+      current = (transmitData[transmitDataIndex] == 0) ? current->left : current->right;
     }
-    transmitData >>= 1;
+    ++transmitDataIndex;
+    //transmitData >>= 1;
+    //transmitData.pop_back();
+    //timer.stopTimer();
+    //std::cout << "Read bit: " << timer.getElapsedTime() << std::endl;
   }
   timer.stopTimer();
   std::cout << "Decode: " << timer.getElapsedTime() / 1000 << std::endl;
+
+  // Deallocate memory
 
   std::cout << std::endl;
 }
@@ -128,18 +142,21 @@ void HuffmanCompressor::getHuffmanCode(Node *node, std::string code, std::string
   }
 }
 
+
 void HuffmanCompressor::reconstructHuffmanTree(Node *&node)
 {
   node = new Node();
-  if (transmitData[0] == 0) {
+  if (transmitData[transmitDataIndex] == 0) {
     if (node->left == NULL) {
-      transmitData >>= 1;
-      transmitData.pop_back();
+      ++transmitDataIndex;
+      //transmitData >>= 1;
+      //transmitData.pop_back();
       reconstructHuffmanTree(node->left);
     }
     if (node->right == NULL) {
-      transmitData >>= 1;
-      transmitData.pop_back();
+      ++transmitDataIndex;
+      //transmitData >>= 1;
+      //transmitData.pop_back();
       reconstructHuffmanTree(node->right);
     }
     return;
@@ -147,10 +164,11 @@ void HuffmanCompressor::reconstructHuffmanTree(Node *&node)
     INT16 value = 0;
     for (UINT i = 0; i < 16; ++i) {
       value <<= 1;
-      transmitData >>= 1;
-      transmitData.pop_back();
+      ++transmitDataIndex;
+      //transmitData >>= 1;
+      //transmitData.pop_back();
       value = value & 0xfffe;
-      value = value | transmitData[0];
+      value = value | transmitData[transmitDataIndex];
     }
     node->value = value;
     return;
