@@ -18,7 +18,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
     ++dataFrequency[data[i]];
   dataFrequency[INT16_MAX] = 1; // use max value as the pseudo EOF
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
   
 
   // Store each frequency as a (leaf) node in minimum heap
@@ -28,7 +28,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
     minHeap.push(node);
   }
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Generate Huffman tree
   timer.startTimer();
@@ -41,8 +41,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   }
   Node *huffmanTree = minHeap.top();
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
-  //minHeap.pop(); // check that this does not erase huffmanTree root node
+  //std::cout << "Generate Huffman tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Get Huffman codes for each value and generate encoded Huffman tree
   timer.startTimer();
@@ -51,7 +50,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   getHuffmanCode(huffmanTree, code, encodedHuffmanTree);
   std::reverse(encodedHuffmanTree.begin(), encodedHuffmanTree.end()); // TODO: try encodedHuffmanTree = bit + encodedHuffmanTree to see if performance is better
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << "Generate encoded Huffman tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Encode data values
   timer.startTimer();
@@ -62,18 +61,23 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   encodedData += huffmanCodes[INT16_MAX]; // add pseudo EOF
   std::reverse(encodedData.begin(), encodedData.end());
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
 
   // Convert data to bit array
   timer.startTimer();
   transmitData = Bitset(encodedData + encodedHuffmanTree);
   timer.stopTimer();
-  std::cout << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Deallocate memory
+  timer.startTimer();
+  deallocateTree(huffmanTree);
+  minHeap.pop();
+  timer.stopTimer();
+  //std::cout << "Deallocate tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
-  std::cout << std::endl;
+  //std::cout << std::endl;
 }
 
 void HuffmanCompressor::decompress()
@@ -88,7 +92,7 @@ void HuffmanCompressor::decompress()
   //transmitData >>= 1; // dispose last bit
   //transmitData.pop_back();
   timer.stopTimer();
-  std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Generate lookup table
 
@@ -106,7 +110,6 @@ void HuffmanCompressor::decompress()
       pseudoEOF = true;
     } else if (value != INT16_MIN) {
       depthDiff[i++] = value;
-      //std::cout << "i: " << i << " value: " << value << std::endl;
       current = head;
     } else {
       current = (transmitData[transmitDataIndex] == 0) ? current->left : current->right;
@@ -118,11 +121,12 @@ void HuffmanCompressor::decompress()
     //std::cout << "Read bit: " << timer.getElapsedTime() << std::endl;
   }
   timer.stopTimer();
-  std::cout << "Decode: " << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << "Decode: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Deallocate memory
+  deallocateTree(huffmanTree);
 
-  std::cout << std::endl;
+  //std::cout << std::endl;
 }
 
 void HuffmanCompressor::getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree)
@@ -141,7 +145,6 @@ void HuffmanCompressor::getHuffmanCode(Node *node, std::string code, std::string
       getHuffmanCode(node->right, code + "1", encodedHuffmanTree);
   }
 }
-
 
 void HuffmanCompressor::reconstructHuffmanTree(Node *&node)
 {
@@ -179,4 +182,13 @@ std::string HuffmanCompressor::getBinary(INT16 value)
 {
   std::bitset<16> bits(value);
   return bits.to_string();
+}
+
+void HuffmanCompressor::deallocateTree(Node *node)
+{
+  if (node != NULL) {
+    deallocateTree(node->left);
+    deallocateTree(node->right);
+    delete node;
+  }
 }

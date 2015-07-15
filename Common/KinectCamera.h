@@ -1,4 +1,5 @@
 #pragma once
+#include "Primitives\CameraParameters.h"
 #include <iostream>
 #include <vector>
 #include <Kinect.h>
@@ -16,6 +17,7 @@ class KinectCamera
   IColorFrame *colorFrame;
   CameraSpacePoint *cameraSpacePoints;
   ColorSpacePoint *colorSpacePoints;
+  CameraParameters cameraParameters;
   RGBQUAD *colorBuffer;
   UINT16 *depthBuffer;
   INT16 *depthDifferential;

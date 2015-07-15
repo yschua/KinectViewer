@@ -51,5 +51,6 @@ private:
   void getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree);
   void reconstructHuffmanTree(Node *&node);
   std::string getBinary(INT16 value);
+  void deallocateTree(Node *node);
 };
 

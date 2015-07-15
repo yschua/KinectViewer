@@ -5,6 +5,7 @@
 GLuint program;
 Camera camera;
 KinectCamera kinectCamera;
+HuffmanCompressor huffmanCompressor;
 ModelGenerator model;
 Core::Timer timer;
 
@@ -35,7 +36,7 @@ GlWindow::~GlWindow()
 void GlWindow::show()
 {
   glutIdleFunc(renderCallback);
-  glutDisplayFunc(renderCallback);
+  //glutDisplayFunc(renderCallback);
   glutMouseFunc(mouseFuncCallback);
   glutMotionFunc(mouseMotionCallback);
   glutKeyboardFunc(keyboardFuncCallback);
@@ -47,16 +48,20 @@ bool once = true; // temporary
 
 void GlWindow::renderCallback()
 {
+  timer.startTimer();
   kinectCamera.update();
+  INT16 *diffData = kinectCamera.getDepthDifferential();
+  //huffmanCompressor.compress(kinectCamera.DEPTH_WIDTH * kinectCamera.DEPTH_HEIGHT, diffData);
+  //huffmanCompressor.decompress();
 
   //if (kinectCamera.depthBuffer[100] > 0 && once) {
   //std::cout << "Capture" << std::endl;
   //model.updateModel(kinectCamera.colorBuffer);
   //model.updateDepthFrame(kinectCamera.depthBuffer);
-  timer.startTimer();
+  
   model.updatePointCloud(kinectCamera);
   timer.stopTimer();
-  std::cout << "Point cloud vertex array update time: " << timer.getElapsedTime() / 1000 << std::endl;
+  std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
   //once = false; // temporary
   //}
   

@@ -71,5 +71,8 @@
     <ClInclude Include="Common\HuffmanCompressor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Primitives\CameraParameters.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

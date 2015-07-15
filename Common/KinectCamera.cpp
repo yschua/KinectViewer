@@ -47,6 +47,8 @@ KinectCamera::~KinectCamera()
   SafeRelease(sensor);
 }
 
+CameraSpacePoint *customCamSpcPt = new CameraSpacePoint[512 * 424];
+
 void KinectCamera::update()
 {
   hr = reader->AcquireLatestFrame(&frame);
@@ -91,15 +93,23 @@ void KinectCamera::update()
     // Color/Depth coordinate mapping
     bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
     mapper->MapDepthFrameToColorSpace(bufferSize, depthBuffer, bufferSize, colorSpacePoints);
-    mapper->MapDepthFrameToCameraSpace(bufferSize, depthBuffer, bufferSize, cameraSpacePoints);
+    //mapper->MapDepthFrameToCameraSpace(bufferSize, depthBuffer, bufferSize, cameraSpacePoints);
 
     // Custom mapping
-    // TODO
+    for (int y = 0; y < DEPTH_HEIGHT; y++) {
+      for (int x = 0; x < DEPTH_WIDTH; x++) {
+        int depthIndex = y * DEPTH_WIDTH + x;
+        float depth = depthBuffer[depthIndex] / 1000.0f;
+        glm::vec3 worldCoordinate = glm::vec3(x, y, 1) * cameraParameters.depthIntrinsicInv * depth;
+        cameraSpacePoints[depthIndex] = { worldCoordinate.x, -worldCoordinate.y, worldCoordinate.z };
+      }
+    }
   }
 
-  //if (depthBuffer[100] != 0) {
-  //  std::cout << "Ready" << std::endl;
-  //}
+
+  if (depthBuffer[100] != 0) {
+    std::cout << "Ready" << std::endl;
+  }
 }
 
 RGBQUAD *KinectCamera::getColorBuffer()
@@ -121,6 +131,7 @@ CameraSpacePoint *KinectCamera::getCameraSpacePoints()
 {
   return cameraSpacePoints;
 }
+
 ColorSpacePoint *KinectCamera::getColorSpacePoints()
 {
   return colorSpacePoints;

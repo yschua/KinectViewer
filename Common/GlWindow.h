@@ -4,6 +4,7 @@
 #include "Common\Camera.h"
 #include "Common\ModelGenerator.h"
 #include "Common\KinectCamera.h"
+#include "Common\HuffmanCompressor.h"
 #include "Primitives\Vertex.h"
 #include <iostream>
 #include <gl\glew.h>

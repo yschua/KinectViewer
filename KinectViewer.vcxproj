@@ -94,6 +94,7 @@
     <ClInclude Include="Common\Camera.h" />
     <ClInclude Include="Common\KinectCamera.h" />
     <ClInclude Include="Common\HuffmanCompressor.h" />
+    <ClInclude Include="Primitives\CameraParameters.h" />
     <ClInclude Include="Primitives\PointCloud.h" />
     <ClInclude Include="Core\ShaderLoader.h" />
     <ClInclude Include="Primitives\Vertex.h" />
