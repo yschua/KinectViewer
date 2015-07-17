@@ -89,8 +89,6 @@ void HuffmanCompressor::decompress()
   timer.startTimer();
   reconstructHuffmanTree(huffmanTree);
   ++transmitDataIndex; // dispose last bit
-  //transmitData >>= 1; // dispose last bit
-  //transmitData.pop_back();
   timer.stopTimer();
   //std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
@@ -115,8 +113,6 @@ void HuffmanCompressor::decompress()
       current = (transmitData[transmitDataIndex] == 0) ? current->left : current->right;
     }
     ++transmitDataIndex;
-    //transmitData >>= 1;
-    //transmitData.pop_back();
     //timer.stopTimer();
     //std::cout << "Read bit: " << timer.getElapsedTime() << std::endl;
   }
@@ -152,14 +148,10 @@ void HuffmanCompressor::reconstructHuffmanTree(Node *&node)
   if (transmitData[transmitDataIndex] == 0) {
     if (node->left == NULL) {
       ++transmitDataIndex;
-      //transmitData >>= 1;
-      //transmitData.pop_back();
       reconstructHuffmanTree(node->left);
     }
     if (node->right == NULL) {
       ++transmitDataIndex;
-      //transmitData >>= 1;
-      //transmitData.pop_back();
       reconstructHuffmanTree(node->right);
     }
     return;
@@ -168,8 +160,6 @@ void HuffmanCompressor::reconstructHuffmanTree(Node *&node)
     for (UINT i = 0; i < 16; ++i) {
       value <<= 1;
       ++transmitDataIndex;
-      //transmitData >>= 1;
-      //transmitData.pop_back();
       value = value & 0xfffe;
       value = value | transmitData[transmitDataIndex];
     }
