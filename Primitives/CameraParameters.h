@@ -4,6 +4,8 @@
 #include <glm\gtc\matrix_transform.hpp>
 
 struct CameraParameters {
+  const float SCALE = 1000.0f;
+
   glm::mat3 depthIntrinsic = glm::mat3(363.637311580360f, 0.0f, 260.162463407267f,
                                        0.0f, 364.345422491291f, 206.802454008941f,
                                        0.0f, 0.0f, 1.0f);
@@ -21,5 +23,12 @@ struct CameraParameters {
                                      0.947176636034766f, 0.142914047434264f, -0.287109726752370f, 257.310388529524f,
                                      0.286727970077501f, 0.0237086527043277f, 0.957718628283997f, 714.071540046624f,
                                      0.0f, 0.0f, 0.0f, 1.0f);
-  glm::mat4 depthToColor = glm::inverse(colorToWorld) * depthToWorld;
+  glm::mat4 depthToColor = glm::inverse(depthToWorld) * colorToWorld;
+  
+  CameraParameters()
+  {
+    depthToColor[0].w = depthToColor[0].w / SCALE;
+    depthToColor[1].w = depthToColor[1].w / SCALE;
+    depthToColor[2].w = depthToColor[2].w / SCALE;
+  }
 };

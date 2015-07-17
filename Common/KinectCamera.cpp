@@ -47,7 +47,7 @@ KinectCamera::~KinectCamera()
   SafeRelease(sensor);
 }
 
-CameraSpacePoint *customCamSpcPt = new CameraSpacePoint[512 * 424];
+ColorSpacePoint *customColSpcPt = new ColorSpacePoint[512 * 424];
 
 void KinectCamera::update()
 {
@@ -102,14 +102,16 @@ void KinectCamera::update()
         float depth = depthBuffer[depthIndex] / 1000.0f;
         glm::vec3 worldCoordinate = glm::vec3(x, y, 1) * cameraParameters.depthIntrinsicInv * depth;
         cameraSpacePoints[depthIndex] = { worldCoordinate.x, -worldCoordinate.y, worldCoordinate.z };
+        glm::vec3 colorCoordinate = glm::vec3(glm::vec4(worldCoordinate, 1) * cameraParameters.depthToColor);
+        glm::vec3 colorSpace = colorCoordinate * cameraParameters.colorIntrinsic / colorCoordinate.z;
+        colorSpacePoints[depthIndex] = { colorSpace.x, colorSpace.y };
       }
     }
   }
 
-
-  if (depthBuffer[100] != 0) {
-    std::cout << "Ready" << std::endl;
-  }
+  //if (depthBuffer[100] != 0) {
+  //  std::cout << "Ready" << std::endl;
+  //}
 }
 
 RGBQUAD *KinectCamera::getColorBuffer()
