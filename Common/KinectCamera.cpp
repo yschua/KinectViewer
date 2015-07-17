@@ -67,7 +67,6 @@ void KinectCamera::update()
     hr = depthFrameRef->AcquireFrame(&depthFrame);
     if (SUCCEEDED(hr)) {
       // Retrieve depth data
-      //hr = depthFrame->AcessUnderlyingBuffer(&bufferSize, &depthBuffer);
       bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
       hr = depthFrame->CopyFrameDataToArray(bufferSize, depthBuffer);
       checkError(hr, "IDepthFrame::CopyFrameDataToArray()");
@@ -81,8 +80,6 @@ void KinectCamera::update()
     hr = colorFrameRef->AcquireFrame(&colorFrame);
     if (SUCCEEDED(hr)) {
       // Retrive color data
-      // TODO: Attempt to use AccessRawUnderlyingBuffer for color data
-      //hr = colorFrame->AccessRawUnderlyingBuffer(&bufferSize, reinterpret_cast<BYTE**>(&colorBuffer));
       bufferSize = COLOR_WIDTH * COLOR_HEIGHT * sizeof(RGBQUAD);
       hr = colorFrame->CopyConvertedFrameDataToArray(bufferSize, reinterpret_cast<BYTE*>(colorBuffer), ColorImageFormat_Bgra);
       checkError(hr, "IColorFrame::CopyConvertedFrameDataToArray()");
@@ -90,9 +87,9 @@ void KinectCamera::update()
     SafeRelease(colorFrame);
     SafeRelease(colorFrameRef);
 
-    // Color/Depth coordinate mapping
-    bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
-    mapper->MapDepthFrameToColorSpace(bufferSize, depthBuffer, bufferSize, colorSpacePoints);
+    // Kinect SDK color/Depth coordinate mapping
+    //bufferSize = DEPTH_WIDTH * DEPTH_HEIGHT;
+    //mapper->MapDepthFrameToColorSpace(bufferSize, depthBuffer, bufferSize, colorSpacePoints);
     //mapper->MapDepthFrameToCameraSpace(bufferSize, depthBuffer, bufferSize, cameraSpacePoints);
 
     // Custom mapping

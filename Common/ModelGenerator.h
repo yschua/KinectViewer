@@ -18,10 +18,7 @@ public:
   void generate();
   int getNumVertices();
   PointCloud getModel();
-  void updateModel(const RGBQUAD *colorBuffer);
-  void updateDepthFrame(const UINT16 *depthBuffer);
   void updatePointCloud(KinectCamera &kinectCamera);
-protected: // ModelGenerator.cpp is unable to access these functions when protected, why?
-  void createModel();
+protected:
   void loadModel();
 };

@@ -4,7 +4,7 @@
 #include <gl\glew.h>
 
 struct PointCloud {
-  std::vector<Vertex> vertices; // TODO: change to primitive array
+  std::vector<Vertex> vertices;
   GLuint numVertices;
   GLsizeiptr bufferSize() const
   {

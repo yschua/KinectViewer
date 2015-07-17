@@ -44,26 +44,18 @@ void GlWindow::show()
   glutMainLoop();
 }
 
-bool once = true; // temporary
-
 void GlWindow::renderCallback()
 {
   timer.startTimer();
   kinectCamera.update();
-  INT16 *diffData = kinectCamera.getDepthDifferential();
+
+  //INT16 *diffData = kinectCamera.getDepthDifferential();
   //huffmanCompressor.compress(kinectCamera.DEPTH_WIDTH * kinectCamera.DEPTH_HEIGHT, diffData);
   //huffmanCompressor.decompress();
-
-  //if (kinectCamera.depthBuffer[100] > 0 && once) {
-  //std::cout << "Capture" << std::endl;
-  //model.updateModel(kinectCamera.colorBuffer);
-  //model.updateDepthFrame(kinectCamera.depthBuffer);
   
   model.updatePointCloud(kinectCamera);
   timer.stopTimer();
   std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
-  //once = false; // temporary
-  //}
   
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glClearColor(0, 0, 0, 1);
@@ -86,7 +78,6 @@ void GlWindow::renderCallback()
 void GlWindow::mouseFuncCallback(int button, int state, int x, int y)
 {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-    once = true; // temporary
     camera.setMousePosition(x, y);
   }
 }
