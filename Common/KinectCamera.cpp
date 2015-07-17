@@ -19,8 +19,8 @@ KinectCamera::KinectCamera() :
   colorBufferReduced = new BYTE[DEPTH_WIDTH * DEPTH_HEIGHT * 3];
   depthBuffer = new UINT16[DEPTH_WIDTH * DEPTH_HEIGHT];
   depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT]; // this can overwrite depthBuffer
-  cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
-  colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
+  //cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
+  //colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
 }
 
 KinectCamera::~KinectCamera()
@@ -37,14 +37,14 @@ KinectCamera::~KinectCamera()
     delete[] depthBuffer;
     depthBuffer = NULL;
   }
-  if (cameraSpacePoints) {
-    delete[] cameraSpacePoints;
-    cameraSpacePoints = NULL;
-  }
-  if (colorSpacePoints) {
-    delete[] colorSpacePoints;
-    colorSpacePoints = NULL;
-  }
+  //if (cameraSpacePoints) {
+  //  delete[] cameraSpacePoints;
+  //  cameraSpacePoints = NULL;
+  //}
+  //if (colorSpacePoints) {
+  //  delete[] colorSpacePoints;
+  //  colorSpacePoints = NULL;
+  //}
   SafeRelease(reader);
   SafeRelease(mapper);
   if (sensor)
@@ -96,6 +96,8 @@ void KinectCamera::update()
     //mapper->MapDepthFrameToCameraSpace(bufferSize, depthBuffer, bufferSize, cameraSpacePoints);
 
     // Custom mapping
+    // World coordinates are calculated and used to do depth/color mapping to
+    // find the relevant color pixels, which are stored in colorBufferReduced
     for (int y = 0; y < DEPTH_HEIGHT; y++) {
       for (int x = 0; x < DEPTH_WIDTH; x++) {
         int depthIndex = y * DEPTH_WIDTH + x;
@@ -121,7 +123,7 @@ void KinectCamera::update()
   }
 
   //if (depthBuffer[100] != 0) {
-  //  std::cout << "Ready" << std::endl;
+  //  std::cout << "DEBUG" << std::endl;
   //}
 }
 
@@ -145,15 +147,15 @@ INT16 *KinectCamera::getDepthDifferential()
   return depthDifferential;
 }
 
-CameraSpacePoint *KinectCamera::getCameraSpacePoints()
-{
-  return cameraSpacePoints;
-}
-
-ColorSpacePoint *KinectCamera::getColorSpacePoints()
-{
-  return colorSpacePoints;
-}
+//CameraSpacePoint *KinectCamera::getCameraSpacePoints()
+//{
+//  return cameraSpacePoints;
+//}
+//
+//ColorSpacePoint *KinectCamera::getColorSpacePoints()
+//{
+//  return colorSpacePoints;
+//}
 
 void KinectCamera::computeDepthDifferential()
 {

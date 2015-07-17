@@ -21,6 +21,7 @@ PointCloud ModelGenerator::getModel()
   return pointCloud;
 }
 
+// World coordinates have to be recalculated, color data is used as received
 void ModelGenerator::updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer)
 {
   int pointCloudIndex = 0;
