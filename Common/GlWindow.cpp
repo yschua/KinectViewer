@@ -6,7 +6,7 @@ GLuint program;
 Camera camera;
 KinectCamera kinectCamera;
 HuffmanCompressor huffmanCompressor;
-ModelGenerator model;
+ModelGenerator model(kinectCamera.DEPTH_WIDTH, kinectCamera.DEPTH_HEIGHT);
 Core::Timer timer;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -20,7 +20,7 @@ GlWindow::GlWindow(int argc, char *argv[])
   glEnable(GL_POINT_SMOOTH);
   //glPointSize(1.0f);
   
-  model.generate();
+  model.loadModel();
 
   Core::ShaderLoader shaderLoader;
   program = shaderLoader.createProgram("Shaders\\VertexShader.glsl",
@@ -49,11 +49,14 @@ void GlWindow::renderCallback()
   timer.startTimer();
   kinectCamera.update();
 
+  UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
+  BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
   //INT16 *diffData = kinectCamera.getDepthDifferential();
   //huffmanCompressor.compress(kinectCamera.DEPTH_WIDTH * kinectCamera.DEPTH_HEIGHT, diffData);
   //huffmanCompressor.decompress();
-  
-  model.updatePointCloud(kinectCamera);
+
+  model.updatePointCloud(depthBuffer, colorBuffer);
+
   timer.stopTimer();
   std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
   

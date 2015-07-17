@@ -1,6 +1,7 @@
 #pragma once
 #include "Primitives\PointCloud.h"
 #include "Primitives\Vertex.h"
+#include "Primitives\CameraParameters.h"
 #include "Core\Timer.h"
 #include "Common\KinectCamera.h"
 #include <vector>
@@ -9,16 +10,15 @@
 
 class ModelGenerator {
   PointCloud pointCloud;
-  GLushort *indices;
-  int numIndices;
+  CameraParameters cameraParameters;
   Core::Timer timer;
+  const int WIDTH;
+  const int HEIGHT;
 public:
-  ModelGenerator();
+  ModelGenerator(int width, int height);
   ~ModelGenerator();
-  void generate();
   int getNumVertices();
   PointCloud getModel();
-  void updatePointCloud(KinectCamera &kinectCamera);
-protected:
+  void updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer);
   void loadModel();
 };

@@ -19,6 +19,7 @@ class KinectCamera
   ColorSpacePoint *colorSpacePoints;
   CameraParameters cameraParameters;
   RGBQUAD *colorBuffer;
+  BYTE *colorBufferReduced;
   UINT16 *depthBuffer;
   INT16 *depthDifferential;
 public:
@@ -31,6 +32,7 @@ public:
   ~KinectCamera();
   void update();
   RGBQUAD *getColorBuffer();
+  BYTE *getColorBufferReduced();
   UINT16 *getDepthBuffer();
   INT16 *getDepthDifferential();
   CameraSpacePoint *getCameraSpacePoints();

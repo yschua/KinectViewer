@@ -1,18 +1,14 @@
 #include "ModelGenerator.h"
 
-ModelGenerator::ModelGenerator()
+ModelGenerator::ModelGenerator(int width, int height) :
+  WIDTH(width),
+  HEIGHT(height)
 {
-  pointCloud.vertices = std::vector<Vertex>(512 * 424); // fix magic number
+  pointCloud.vertices = std::vector<Vertex>(width * height);
 }
 
 ModelGenerator::~ModelGenerator()
 {
-  //delete[] indices;
-}
-
-void ModelGenerator::generate()
-{
-  loadModel();
 }
 
 int ModelGenerator::getNumVertices()
@@ -25,36 +21,22 @@ PointCloud ModelGenerator::getModel()
   return pointCloud;
 }
 
-void ModelGenerator::updatePointCloud(KinectCamera &kinectCamera)
+void ModelGenerator::updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer)
 {
   int pointCloudIndex = 0;
-  CameraSpacePoint *cameraSpacePoints = kinectCamera.getCameraSpacePoints();
-  ColorSpacePoint *colorSpacePoints = kinectCamera.getColorSpacePoints();
+  for (int y = 0; y < HEIGHT; ++y) {
+    for (int x = 0; x < WIDTH; ++x) {
+      int depthIndex = (HEIGHT - 1 - y) * WIDTH + (WIDTH - 1 - x);
+      float depth = depthBuffer[depthIndex] / 1000.0f;
+      glm::vec3 worldCoordinate = glm::vec3(x, y, 1) * cameraParameters.depthIntrinsicInv * depth;
 
-  for (int y = 0; y < kinectCamera.DEPTH_HEIGHT; ++y) {
-    for (int x = 0; x < kinectCamera.DEPTH_WIDTH; ++x) {
-      int depthIndex = (kinectCamera.DEPTH_HEIGHT - 1 - y) * kinectCamera.DEPTH_WIDTH + (kinectCamera.DEPTH_WIDTH - 1 - x);
-      CameraSpacePoint cameraSpacePoint = cameraSpacePoints[depthIndex];
-      ColorSpacePoint colorSpacePoint = colorSpacePoints[depthIndex];
-
-      if (isnan(cameraSpacePoint.Z)) {
+      if (isnan(worldCoordinate.z)) {
         pointCloud.vertices[pointCloudIndex] = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f) };
       } else {
-        int colorX = static_cast<int>(std::floor(colorSpacePoint.X + 0.5f));
-        int colorY = static_cast<int>(std::floor(colorSpacePoint.Y + 0.5f));
-        if ((colorX >= 0) && (colorX < kinectCamera.COLOR_WIDTH) && (colorY >= 0) && (colorY < kinectCamera.COLOR_HEIGHT)) {
-          RGBQUAD color = kinectCamera.getColorBuffer()[colorY * kinectCamera.COLOR_WIDTH + colorX];
-          float r = color.rgbRed / 255.0f;
-          float g = color.rgbGreen / 255.0f;
-          float b = color.rgbBlue / 255.0f;
-          float x = cameraSpacePoint.X;
-          float y = cameraSpacePoint.Y;
-          float z = cameraSpacePoint.Z;
-
-          pointCloud.vertices[pointCloudIndex] = { glm::vec3(x, y, z), glm::vec3(r, g, b) };
-        } else {
-          pointCloud.vertices[pointCloudIndex] = { glm::vec3(0.0f, 0.0f, 0.0f), glm::vec3(0.0f, 0.0f, 0.0f) };
-        }
+        float r = colorBuffer[depthIndex * 3] / 255.0f;
+        float g = colorBuffer[depthIndex * 3 + 1] / 255.0f;
+        float b = colorBuffer[depthIndex * 3 + 2] / 255.0f;
+        pointCloud.vertices[pointCloudIndex] = { glm::vec3(worldCoordinate.x, worldCoordinate.y, worldCoordinate.z), glm::vec3(r, g, b) };
       }
       pointCloudIndex++;
     }

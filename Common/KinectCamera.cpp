@@ -16,6 +16,7 @@ KinectCamera::KinectCamera() :
   checkError(hr, "IKinectSensor::get_CoordinateMapper()");
 
   colorBuffer = new RGBQUAD[COLOR_WIDTH * COLOR_HEIGHT];
+  colorBufferReduced = new BYTE[DEPTH_WIDTH * DEPTH_HEIGHT * 3];
   depthBuffer = new UINT16[DEPTH_WIDTH * DEPTH_HEIGHT];
   depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT]; // this can overwrite depthBuffer
   cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
@@ -27,6 +28,10 @@ KinectCamera::~KinectCamera()
   if (colorBuffer) {
     delete[] colorBuffer;
     colorBuffer = NULL;
+  }
+  if (colorBufferReduced) {
+    delete[] colorBufferReduced;
+    colorBufferReduced = NULL;
   }
   if (depthBuffer) {
     delete[] depthBuffer;
@@ -46,8 +51,6 @@ KinectCamera::~KinectCamera()
     sensor->Close();
   SafeRelease(sensor);
 }
-
-ColorSpacePoint *customColSpcPt = new ColorSpacePoint[512 * 424];
 
 void KinectCamera::update()
 {
@@ -98,10 +101,21 @@ void KinectCamera::update()
         int depthIndex = y * DEPTH_WIDTH + x;
         float depth = depthBuffer[depthIndex] / 1000.0f;
         glm::vec3 worldCoordinate = glm::vec3(x, y, 1) * cameraParameters.depthIntrinsicInv * depth;
-        cameraSpacePoints[depthIndex] = { worldCoordinate.x, -worldCoordinate.y, worldCoordinate.z };
         glm::vec3 colorCoordinate = glm::vec3(glm::vec4(worldCoordinate, 1) * cameraParameters.depthToColor);
         glm::vec3 colorSpace = colorCoordinate * cameraParameters.colorIntrinsic / colorCoordinate.z;
-        colorSpacePoints[depthIndex] = { colorSpace.x, colorSpace.y };
+
+        int colorX = static_cast<int>(std::floor(colorSpace.x + 0.5f));
+        int colorY = static_cast<int>(std::floor(colorSpace.y + 0.5f));
+        if ((colorX >= 0) && (colorX < COLOR_WIDTH) && (colorY >= 0) && (colorY < COLOR_HEIGHT)) {
+          RGBQUAD color = colorBuffer[(colorY * COLOR_WIDTH + colorX)];
+          colorBufferReduced[depthIndex * 3] = color.rgbRed;
+          colorBufferReduced[depthIndex * 3 + 1] = color.rgbGreen;
+          colorBufferReduced[depthIndex * 3 + 2] = color.rgbBlue;
+        } else {
+          colorBufferReduced[depthIndex * 3] = 128;
+          colorBufferReduced[depthIndex * 3 + 1] = 128;
+          colorBufferReduced[depthIndex * 3 + 2] = 128;
+        }
       }
     }
   }
@@ -114,6 +128,11 @@ void KinectCamera::update()
 RGBQUAD *KinectCamera::getColorBuffer()
 {
   return colorBuffer;
+}
+
+BYTE *KinectCamera::getColorBufferReduced()
+{
+  return colorBufferReduced;
 }
 
 UINT16 *KinectCamera::getDepthBuffer()
