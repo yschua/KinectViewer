@@ -10,14 +10,12 @@ HuffmanCompressor::~HuffmanCompressor()
 
 void HuffmanCompressor::compress(UINT size, const INT16 *data)
 {
-  diffData = data;
   // Find frequency of each value
-  // TODO: Use unordered map
-  timer.startTimer();
+  //timer.startTimer();
   for (UINT i = 0; i < size; ++i)
     ++dataFrequency[data[i]];
   dataFrequency[INT16_MAX] = 1; // use max value as the pseudo EOF
-  timer.stopTimer();
+  //timer.stopTimer();
   //std::cout << timer.getElapsedTime() / 1000 << std::endl;
   
 
@@ -63,7 +61,6 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   timer.stopTimer();
   //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
-
   // Convert data to bit array
   timer.startTimer();
   transmitData = Bitset(encodedData + encodedHuffmanTree);
@@ -80,7 +77,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   //std::cout << std::endl;
 }
 
-void HuffmanCompressor::decompress()
+void HuffmanCompressor::decompress(Bitset transmitData, UINT16 *dataOut)
 {
   transmitDataIndex = 0;
 
@@ -96,7 +93,7 @@ void HuffmanCompressor::decompress()
 
   // Decode data values
   timer.startTimer();
-  INT16 depthDiff[512 * 424]; // temp
+  //INT16 depthDiff[512 * 424]; // temp
   UINT i = 0; // temp
   Node *head = huffmanTree;
   Node *current = head;
@@ -107,7 +104,7 @@ void HuffmanCompressor::decompress()
     if (value == INT16_MAX) {
       pseudoEOF = true;
     } else if (value != INT16_MIN) {
-      depthDiff[i++] = value;
+      dataOut[i++] = value;
       current = head;
     } else {
       current = (transmitData[transmitDataIndex] == 0) ? current->left : current->right;
@@ -121,6 +118,10 @@ void HuffmanCompressor::decompress()
 
   // Deallocate memory
   deallocateTree(huffmanTree);
+
+  for (int i = 1; i < 512 * 424; i++) {
+    dataOut[i] = dataOut[i] + dataOut[i - 1];
+  }
 
   //std::cout << std::endl;
 }
@@ -181,4 +182,9 @@ void HuffmanCompressor::deallocateTree(Node *node)
     deallocateTree(node->right);
     delete node;
   }
+}
+
+Bitset HuffmanCompressor::getTransmitData()
+{
+  return transmitData;
 }
