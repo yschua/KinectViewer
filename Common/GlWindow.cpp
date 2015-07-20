@@ -8,6 +8,11 @@ KinectCamera kinectCamera;
 HuffmanCompressor huffmanCompressor;
 ModelGenerator model(kinectCamera.DEPTH_WIDTH, kinectCamera.DEPTH_HEIGHT);
 Core::Timer timer;
+const int DEPTH_WIDTH = kinectCamera.DEPTH_WIDTH;
+const int DEPTH_HEIGHT = kinectCamera.DEPTH_HEIGHT;
+
+UINT16 depth[512 * 424];
+int compressionMode = 1;
 
 GlWindow::GlWindow(int argc, char *argv[])
 {
@@ -47,15 +52,24 @@ void GlWindow::show()
 void GlWindow::renderCallback()
 {
   timer.startTimer();
+  // Sender computer obtains frame data
   kinectCamera.update();
 
+  // Data processing and simulated transmission
   UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
   BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
-  //INT16 *diffData = kinectCamera.getDepthDifferential();
-  //huffmanCompressor.compress(kinectCamera.DEPTH_WIDTH * kinectCamera.DEPTH_HEIGHT, diffData);
-  //huffmanCompressor.decompress();
+  INT16 *depthDifferential = kinectCamera.getDepthDifferential();
 
-  model.updatePointCloud(depthBuffer, colorBuffer);
+  if (compressionMode == 1) {
+    for (int i = 0; i < DEPTH_WIDTH * DEPTH_HEIGHT; i++) depth[i] = depthBuffer[i];
+  } else if (compressionMode == 2) {
+    huffmanCompressor.compress(DEPTH_WIDTH * DEPTH_HEIGHT, depthDifferential);
+    Bitset transmitData = huffmanCompressor.getTransmitData();
+    huffmanCompressor.decompress(transmitData, depth);
+  }
+
+  // Receiver computer renders received frame data
+  model.updatePointCloud(depth, colorBuffer);
 
   timer.stopTimer();
   std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
@@ -94,6 +108,10 @@ void GlWindow::mouseMotionCallback(int x, int y)
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
+    case ' ': {
+      camera.resetView();
+      break;
+    }
     case 'w': {
       camera.moveCameraPosition(0, 0, 1);
       break;
@@ -108,6 +126,14 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     }
     case 'd': {
       camera.moveCameraPosition(-1, 0, 0);
+      break;
+    }
+    case '1': {
+      compressionMode = 1;
+      break;
+    }
+    case '2': {
+      compressionMode = 2;
       break;
     }
   }
