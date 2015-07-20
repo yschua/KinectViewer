@@ -69,10 +69,8 @@ void GlWindow::renderCallback()
   } else if (compressionMode == 2) {
     huffmanCompressor.compress(DEPTH_WIDTH * DEPTH_HEIGHT, depthDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
-    std::cout << "Depth size: " << transmitData.size() << " Ratio: " << 512 * 424 * 16 / (float)transmitData.size() << std::endl;
+    std::cout << "Depth size: " << transmitData.size() / 8 << "\tCompresssion ratio: " << 512 * 424 * 16 / (float)transmitData.size() << std::endl;
     huffmanCompressor.decompress(transmitData, depth);
-
-    
   }
 
   // Receiver computer renders received frame data

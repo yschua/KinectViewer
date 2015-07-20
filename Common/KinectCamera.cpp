@@ -161,7 +161,7 @@ void KinectCamera::computeDepthDifferential()
 {
   depthDifferential[0] = depthBuffer[0];
   for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
-    depthDifferential[i] = (depthBuffer[i] - depthBuffer[i - 1]);
+    depthDifferential[i] = (min(depthBuffer[i], 4500) - min(depthBuffer[i - 1], 4500));
   }
 }
 

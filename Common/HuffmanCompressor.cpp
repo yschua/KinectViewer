@@ -11,11 +11,11 @@ HuffmanCompressor::~HuffmanCompressor()
 void HuffmanCompressor::compress(UINT size, const INT16 *data)
 {
   // Find frequency of each value
-  //timer.startTimer();
+  timer.startTimer();
   for (UINT i = 0; i < size; ++i)
     ++dataFrequency[data[i]];
   dataFrequency[INT16_MAX] = 1; // use max value as the pseudo EOF
-  //timer.stopTimer();
+  timer.stopTimer();
   //std::cout << timer.getElapsedTime() / 1000 << std::endl;
   
 
