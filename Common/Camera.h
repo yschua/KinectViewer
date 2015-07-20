@@ -9,12 +9,14 @@ class Camera {
   glm::vec3 position;
   glm::vec3 viewDirection;
   glm::vec2 oldMousePosition;
+  glm::vec2 viewAngle;
   const glm::vec3 UP;
-  float viewAngle;
+  const glm::vec3 RIGHT;
 public:
   Camera();
   void setMousePosition(int x, int y);
   void mouseUpdate(const glm::vec2& newMousePosition);
   void moveCameraPosition(int x, int y, int z);
   glm::mat4 getViewMatrix() const;
+  void resetView();
 };
