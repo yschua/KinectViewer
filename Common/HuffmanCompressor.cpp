@@ -71,6 +71,8 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   timer.startTimer();
   deallocateTree(huffmanTree);
   minHeap.pop();
+  dataFrequency.clear();
+  huffmanCodes.clear();
   timer.stopTimer();
   //std::cout << "Deallocate tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
@@ -93,7 +95,6 @@ void HuffmanCompressor::decompress(Bitset transmitData, UINT16 *dataOut)
 
   // Decode data values
   timer.startTimer();
-  //INT16 depthDiff[512 * 424]; // temp
   UINT i = 0; // temp
   Node *head = huffmanTree;
   Node *current = head;

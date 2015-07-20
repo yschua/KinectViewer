@@ -51,6 +51,9 @@ void GlWindow::show()
 
 void GlWindow::renderCallback()
 {
+  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+  glClearColor(0, 0, 0, 1);
+
   timer.startTimer();
   // Sender computer obtains frame data
   kinectCamera.update();
@@ -61,30 +64,31 @@ void GlWindow::renderCallback()
   INT16 *depthDifferential = kinectCamera.getDepthDifferential();
 
   if (compressionMode == 1) {
-    for (int i = 0; i < DEPTH_WIDTH * DEPTH_HEIGHT; i++) depth[i] = depthBuffer[i];
+    for (int i = 0; i < DEPTH_WIDTH * DEPTH_HEIGHT; i++)
+      depth[i] = depthBuffer[i];
   } else if (compressionMode == 2) {
     huffmanCompressor.compress(DEPTH_WIDTH * DEPTH_HEIGHT, depthDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
+    std::cout << "Depth size: " << transmitData.size() << " Ratio: " << 512 * 424 * 16 / (float)transmitData.size() << std::endl;
     huffmanCompressor.decompress(transmitData, depth);
+
+    
   }
 
   // Receiver computer renders received frame data
   model.updatePointCloud(depth, colorBuffer);
 
   timer.stopTimer();
-  std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
   
-  glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-  glClearColor(0, 0, 0, 1);
-  glUseProgram(program);
-
   glm::mat4 modelMatrix = glm::scale(glm::vec3(0.2f, 0.2f, 0.2f));
   //modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
   //modelMatrix = glm::translate(modelMatrix, glm::vec3(-256.0f, -212.0f, -1000.0f));
   glm::mat4 viewMatrix = camera.getViewMatrix();
   glm::mat4 projectionMatrix = glm::perspective(45.0f, 64.0f / 53.0f, 0.000001f, 10000.0f);
   glm::mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
-
+  
+  glUseProgram(program);
   GLuint mvpMatrix = glGetUniformLocation(program, "mvpMatrix");
   glUniformMatrix4fv(mvpMatrix, 1, GL_FALSE, &mvp[0][0]);
   glDrawArrays(GL_POINTS, 0, model.getNumVertices());
