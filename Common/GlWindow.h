@@ -1,4 +1,4 @@
-#pragma once // Check ifndef vs pragma
+#pragma once
 #include "Core\ShaderLoader.h"
 #include "Core\Timer.h"
 #include "Common\Camera.h"

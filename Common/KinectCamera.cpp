@@ -17,8 +17,9 @@ KinectCamera::KinectCamera() :
 
   colorBuffer = new RGBQUAD[COLOR_WIDTH * COLOR_HEIGHT];
   colorBufferReduced = new BYTE[DEPTH_WIDTH * DEPTH_HEIGHT * 3];
+  colorDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT * 3];
   depthBuffer = new UINT16[DEPTH_WIDTH * DEPTH_HEIGHT];
-  depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT]; // this can overwrite depthBuffer
+  depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT];
   //cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
   //colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
 }
@@ -33,18 +34,18 @@ KinectCamera::~KinectCamera()
     delete[] colorBufferReduced;
     colorBufferReduced = NULL;
   }
+  if (colorDifferential) {
+    delete[] colorDifferential;
+    colorDifferential = NULL;
+  }
   if (depthBuffer) {
     delete[] depthBuffer;
     depthBuffer = NULL;
   }
-  //if (cameraSpacePoints) {
-  //  delete[] cameraSpacePoints;
-  //  cameraSpacePoints = NULL;
-  //}
-  //if (colorSpacePoints) {
-  //  delete[] colorSpacePoints;
-  //  colorSpacePoints = NULL;
-  //}
+  if (depthDifferential) {
+    delete[] depthDifferential;
+    depthDifferential = NULL;
+  }
   SafeRelease(reader);
   SafeRelease(mapper);
   if (sensor)
@@ -122,6 +123,8 @@ void KinectCamera::update()
     }
   }
 
+  computeColorDifferential();
+
   //if (depthBuffer[100] != 0) {
   //  std::cout << "DEBUG" << std::endl;
   //}
@@ -147,6 +150,11 @@ INT16 *KinectCamera::getDepthDifferential()
   return depthDifferential;
 }
 
+INT16 *KinectCamera::getColorDifferential()
+{
+  return colorDifferential;
+}
+
 //CameraSpacePoint *KinectCamera::getCameraSpacePoints()
 //{
 //  return cameraSpacePoints;
@@ -162,6 +170,14 @@ void KinectCamera::computeDepthDifferential()
   depthDifferential[0] = depthBuffer[0];
   for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
     depthDifferential[i] = (min(depthBuffer[i], 4500) - min(depthBuffer[i - 1], 4500));
+  }
+}
+
+void KinectCamera::computeColorDifferential()
+{
+  colorDifferential[0] = colorBufferReduced[0];
+  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH * 3; i++) {
+    colorDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
   }
 }
 

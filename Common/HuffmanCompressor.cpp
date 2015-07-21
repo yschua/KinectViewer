@@ -8,7 +8,7 @@ HuffmanCompressor::~HuffmanCompressor()
 {
 }
 
-void HuffmanCompressor::compress(UINT size, const INT16 *data)
+void HuffmanCompressor::compress(int size, const INT16 *data)
 {
   // Find frequency of each value
   timer.startTimer();
@@ -17,7 +17,6 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   dataFrequency[INT16_MAX] = 1; // use max value as the pseudo EOF
   timer.stopTimer();
   //std::cout << timer.getElapsedTime() / 1000 << std::endl;
-  
 
   // Store each frequency as a (leaf) node in minimum heap
   timer.startTimer();
@@ -79,7 +78,7 @@ void HuffmanCompressor::compress(UINT size, const INT16 *data)
   //std::cout << std::endl;
 }
 
-void HuffmanCompressor::decompress(Bitset transmitData, UINT16 *dataOut)
+void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOut)
 {
   transmitDataIndex = 0;
 
@@ -120,7 +119,7 @@ void HuffmanCompressor::decompress(Bitset transmitData, UINT16 *dataOut)
   // Deallocate memory
   deallocateTree(huffmanTree);
 
-  for (int i = 1; i < 512 * 424; i++) {
+  for (int i = 1; i < size; i++) {
     dataOut[i] = dataOut[i] + dataOut[i - 1];
   }
 

@@ -45,8 +45,8 @@ class HuffmanCompressor {
 public:
   HuffmanCompressor();
   ~HuffmanCompressor();
-  void compress(UINT size, const INT16 *data);
-  void decompress(Bitset transmitData, UINT16 *dataOut);
+  void compress(int size, const INT16 *data);
+  void decompress(int size, Bitset transmitData, UINT16 *dataOut);
   Bitset getTransmitData();
 private:
   void getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree);

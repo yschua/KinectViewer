@@ -23,7 +23,6 @@ void Camera::mouseUpdate(const glm::vec2& newMousePosition)
 
   oldMousePosition = newMousePosition;
   viewAngle += mouseDelta / 100.0f;
-  //std::cout << "rotate by " << mouseDelta.x / 100 << std::endl;
 }
 
 void Camera::moveCameraPosition(int x, int y, int z)
