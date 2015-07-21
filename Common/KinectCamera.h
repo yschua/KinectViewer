@@ -23,6 +23,7 @@ class KinectCamera
   INT16 *colorDifferential;
   UINT16 *depthBuffer;
   INT16 *depthDifferential;
+  INT16 *combinedDifferential;
 public:
   const int COLOR_WIDTH;
   const int COLOR_HEIGHT;
@@ -37,11 +38,13 @@ public:
   UINT16 *getDepthBuffer();
   INT16 *getDepthDifferential();
   INT16 *getColorDifferential();
+  INT16 *getCombinedDifferential();
   CameraSpacePoint *getCameraSpacePoints();
   ColorSpacePoint *getColorSpacePoints();
 protected:
   void computeDepthDifferential();
   void computeColorDifferential();
+  void computeCombinedDifferential();
   static void checkError(HRESULT hr, char *name);
 };
 

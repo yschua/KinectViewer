@@ -62,26 +62,28 @@ void GlWindow::renderCallback()
   // Data processing and simulated transmission
   static UINT16 depth[DEPTH_SIZE];
   static UINT16 colorInt[COLOR_SIZE];
-  static BYTE colorByte[COLOR_SIZE];
+  static BYTE color[COLOR_SIZE];
+  static UINT16 combinedData[DEPTH_SIZE + COLOR_SIZE];
   UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
   BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
   INT16 *depthDifferential = kinectCamera.getDepthDifferential();
   INT16 *colorDifferential = kinectCamera.getColorDifferential();
+  INT16 *combinedDifferential = kinectCamera.getCombinedDifferential();
 
   if (compressionMode == 1) {
     for (int i = 0; i < DEPTH_SIZE; i++)
       depth[i] = depthBuffer[i];
     for (int i = 0; i < COLOR_SIZE; i++)
-      colorByte[i] = colorBuffer[i];
+      color[i] = colorBuffer[i];
   } else if (compressionMode == 2) {
     int depthTransmitSize, colorTransmitSize;
-    huffmanCompressor.compress(DEPTH_WIDTH * DEPTH_HEIGHT, depthDifferential);
+    huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
     depthTransmitSize = transmitData.size();
     //std::cout << "Depth size: " << depthTransmitSize << "\tCompresssion ratio: " << DEPTH_SIZE * 16 / (float)transmitData.size() << std::endl;
     huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
     
-    huffmanCompressor.compress(DEPTH_WIDTH * DEPTH_HEIGHT * 3, colorDifferential);
+    huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
     transmitData = huffmanCompressor.getTransmitData();
     colorTransmitSize = transmitData.size();
     //std::cout << "Color size: " << colorTransmitSize << "\tCompresssion ratio: " << COLOR_SIZE * 8 / (float)transmitData.size() << std::endl;
@@ -89,11 +91,23 @@ void GlWindow::renderCallback()
 
     std::cout << "Total compression: " << DEPTH_SIZE * 32 / (float)(depthTransmitSize + colorTransmitSize) << std::endl;
     for (int i = 0; i < COLOR_SIZE; i++)
-      colorByte[i] = (BYTE)colorInt[i];
+      color[i] = (BYTE)colorInt[i];
+  } else if (compressionMode == 3) {
+    
+
+    huffmanCompressor.compress(DEPTH_SIZE + COLOR_SIZE, combinedDifferential);
+    Bitset transmitData = huffmanCompressor.getTransmitData();
+    std::cout << "Total compression: " << DEPTH_SIZE * 32 / (float)transmitData.size() << std::endl;
+    huffmanCompressor.decompress(DEPTH_SIZE + COLOR_SIZE, transmitData, combinedData);
+
+    for (int i = 0; i < COLOR_SIZE; i++)
+      color[i] = (BYTE)combinedData[i];
+    for (int i = 0; i < DEPTH_SIZE; i++)
+      depth[i] = combinedData[i + COLOR_SIZE];
   }
 
   // Receiver computer renders received frame data
-  model.updatePointCloud(depth, colorByte);
+  model.updatePointCloud(depth, color);
 
   timer.stopTimer();
   std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
@@ -155,6 +169,10 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     }
     case '2': {
       compressionMode = 2;
+      break;
+    }
+    case '3': {
+      compressionMode = 3;
       break;
     }
   }

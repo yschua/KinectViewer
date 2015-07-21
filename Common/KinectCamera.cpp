@@ -20,6 +20,7 @@ KinectCamera::KinectCamera() :
   colorDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT * 3];
   depthBuffer = new UINT16[DEPTH_WIDTH * DEPTH_HEIGHT];
   depthDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT];
+  combinedDifferential = new INT16[DEPTH_WIDTH * DEPTH_HEIGHT * 4];
   //cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
   //colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
 }
@@ -45,6 +46,10 @@ KinectCamera::~KinectCamera()
   if (depthDifferential) {
     delete[] depthDifferential;
     depthDifferential = NULL;
+  }
+  if (combinedDifferential) {
+    delete[] combinedDifferential;
+    combinedDifferential = NULL;
   }
   SafeRelease(reader);
   SafeRelease(mapper);
@@ -124,6 +129,7 @@ void KinectCamera::update()
   }
 
   computeColorDifferential();
+  computeCombinedDifferential();
 
   //if (depthBuffer[100] != 0) {
   //  std::cout << "DEBUG" << std::endl;
@@ -155,6 +161,11 @@ INT16 *KinectCamera::getColorDifferential()
   return colorDifferential;
 }
 
+INT16 *KinectCamera::getCombinedDifferential()
+{
+  return combinedDifferential;
+}
+
 //CameraSpacePoint *KinectCamera::getCameraSpacePoints()
 //{
 //  return cameraSpacePoints;
@@ -178,6 +189,18 @@ void KinectCamera::computeColorDifferential()
   colorDifferential[0] = colorBufferReduced[0];
   for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH * 3; i++) {
     colorDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
+  }
+}
+
+void KinectCamera::computeCombinedDifferential()
+{
+  combinedDifferential[0] = colorBufferReduced[0];
+  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH * 3; i++) {
+    combinedDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
+  }
+  combinedDifferential[DEPTH_HEIGHT * DEPTH_WIDTH * 3] = min(depthBuffer[0], 4500) - colorBufferReduced[DEPTH_HEIGHT * DEPTH_WIDTH * 3 - 1];
+  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
+    combinedDifferential[DEPTH_HEIGHT * DEPTH_WIDTH * 3 + i] = (min(depthBuffer[i], 4500) - min(depthBuffer[i - 1], 4500));
   }
 }
 
