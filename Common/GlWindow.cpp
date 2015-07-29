@@ -12,7 +12,6 @@ const int DEPTH_WIDTH = kinectCamera.DEPTH_WIDTH;
 const int DEPTH_HEIGHT = kinectCamera.DEPTH_HEIGHT;
 const int DEPTH_SIZE = 512 * 424;
 const int COLOR_SIZE = 512 * 424 * 3;
-
 int compressionMode = 1;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -42,7 +41,6 @@ GlWindow::~GlWindow()
 void GlWindow::show()
 {
   glutIdleFunc(renderCallback);
-  //glutDisplayFunc(renderCallback);
   glutMouseFunc(mouseFuncCallback);
   glutMotionFunc(mouseMotionCallback);
   glutKeyboardFunc(keyboardFuncCallback);
@@ -50,11 +48,23 @@ void GlWindow::show()
   glutMainLoop();
 }
 
+void GlWindow::drawText(std::string text, float offset)
+{
+  glUseProgram(0);
+  //glDisable(GL_DEPTH_TEST);
+  glLoadIdentity();
+  glRasterPos2f(-0.9f, 0.9f - offset);
+  glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
+  for (int i = 0; i < text.length(); i++)
+    glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+  //glEnable(GL_DEPTH_TEST);
+}
+
 void GlWindow::renderCallback()
 {
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glClearColor(0, 0, 0, 1);
-
+  
   timer.startTimer();
   // Sender computer obtains frame data
   kinectCamera.update();
@@ -71,33 +81,33 @@ void GlWindow::renderCallback()
   INT16 *combinedDifferential = kinectCamera.getCombinedDifferential();
 
   if (compressionMode == 1) {
+    drawText("No compression", 0.0f);
     for (int i = 0; i < DEPTH_SIZE; i++)
       depth[i] = depthBuffer[i];
     for (int i = 0; i < COLOR_SIZE; i++)
       color[i] = colorBuffer[i];
   } else if (compressionMode == 2) {
+    drawText("Huffman compression (2 trees for each image)", 0.0f);
     int depthTransmitSize, colorTransmitSize;
     huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
     depthTransmitSize = transmitData.size();
-    //std::cout << "Depth size: " << depthTransmitSize << "\tCompresssion ratio: " << DEPTH_SIZE * 16 / (float)transmitData.size() << std::endl;
     huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
     
     huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
     transmitData = huffmanCompressor.getTransmitData();
     colorTransmitSize = transmitData.size();
-    //std::cout << "Color size: " << colorTransmitSize << "\tCompresssion ratio: " << COLOR_SIZE * 8 / (float)transmitData.size() << std::endl;
     huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
-
-    std::cout << "Total compression: " << DEPTH_SIZE * 32 / (float)(depthTransmitSize + colorTransmitSize) << std::endl;
+    float compression_ratio = DEPTH_SIZE * 32 / (float)(depthTransmitSize + colorTransmitSize);
+    drawText("Compression ratio: " + std::to_string(compression_ratio), 0.1f);
     for (int i = 0; i < COLOR_SIZE; i++)
       color[i] = (BYTE)colorInt[i];
   } else if (compressionMode == 3) {
-    
-
+    drawText("Huffman compression (1 tree for both images)", 0.0f);
     huffmanCompressor.compress(DEPTH_SIZE + COLOR_SIZE, combinedDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
-    std::cout << "Total compression: " << DEPTH_SIZE * 32 / (float)transmitData.size() << std::endl;
+    float compression_ratio = DEPTH_SIZE * 32 / (float)transmitData.size();
+    drawText("Compression ratio: " + std::to_string(compression_ratio), 0.1f);
     huffmanCompressor.decompress(DEPTH_SIZE + COLOR_SIZE, transmitData, combinedData);
 
     for (int i = 0; i < COLOR_SIZE; i++)
@@ -110,7 +120,7 @@ void GlWindow::renderCallback()
   model.updatePointCloud(depth, color);
 
   timer.stopTimer();
-  std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
+  //std::cout << "Frame time: " << timer.getElapsedTime() / 1000 << std::endl;
   
   glm::mat4 modelMatrix = glm::scale(glm::vec3(0.2f, 0.2f, 0.2f));
   //modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
@@ -123,7 +133,7 @@ void GlWindow::renderCallback()
   GLuint mvpMatrix = glGetUniformLocation(program, "mvpMatrix");
   glUniformMatrix4fv(mvpMatrix, 1, GL_FALSE, &mvp[0][0]);
   glDrawArrays(GL_POINTS, 0, model.getNumVertices());
-
+  
   glutSwapBuffers();
 }
 

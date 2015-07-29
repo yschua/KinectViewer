@@ -19,10 +19,11 @@ public:
   ~GlWindow();
   void show(void);
 protected:
+  static void drawText(std::string text, float offset);
   static void renderCallback();
-  static void displayCallback();
   static void mouseFuncCallback(int button, int state, int x, int y);
   static void mouseMotionCallback(int x, int y);
   static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
   static void closeCallback();
 };
+
