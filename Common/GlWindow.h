@@ -19,6 +19,7 @@ public:
   ~GlWindow();
   void show(void);
 protected:
+  static void shaderRender();
   static void drawText(std::string text, float offset);
   static void renderCallback();
   static void mouseFuncCallback(int button, int state, int x, int y);

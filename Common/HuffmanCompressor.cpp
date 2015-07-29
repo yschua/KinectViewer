@@ -90,7 +90,7 @@ void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOu
   timer.stopTimer();
   //std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
-  // Generate lookup table
+  // TODO: Generate lookup table
 
   // Decode data values
   timer.startTimer();

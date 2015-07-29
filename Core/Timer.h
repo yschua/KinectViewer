@@ -12,7 +12,8 @@ public:
   Timer();
   void startTimer();
   void stopTimer();
-  int getElapsedTime();
+  float getElapsedTime();
+  float getFPS();
 };
 
 }
