@@ -12,6 +12,7 @@ const int DEPTH_WIDTH = kinectCamera.DEPTH_WIDTH;
 const int DEPTH_HEIGHT = kinectCamera.DEPTH_HEIGHT;
 const int DEPTH_SIZE = 512 * 424;
 const int COLOR_SIZE = 512 * 424 * 3;
+const int FRAME_SIZE = DEPTH_SIZE + COLOR_SIZE;
 int compressionMode = 1;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -71,7 +72,11 @@ void GlWindow::renderCallback()
   static UINT16 depth[DEPTH_SIZE];
   static UINT16 colorInt[COLOR_SIZE];
   static BYTE color[COLOR_SIZE];
-  static UINT16 combinedData[DEPTH_SIZE + COLOR_SIZE];
+  static UINT16 combinedData[FRAME_SIZE];
+  static UINT16 dataReceived[FRAME_SIZE];
+  static INT16 currentFrameSender[FRAME_SIZE];
+  static INT16 currentFrameReceiver[FRAME_SIZE];
+  static INT16 differenceFrame[FRAME_SIZE];
   UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
   BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
   INT16 *depthDifferential = kinectCamera.getDepthDifferential();
@@ -107,13 +112,19 @@ void GlWindow::renderCallback()
 
     // Decompress data
     huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
+
+    // Reconstruct values
+    for (int i = 1; i < DEPTH_SIZE; i++)
+      depth[i] = depth[i] + depth[i - 1];
+    for (int i = 1; i < COLOR_SIZE; i++)
+      colorInt[i] = colorInt[i] + colorInt[i - 1];
     for (int i = 0; i < COLOR_SIZE; i++)
       color[i] = (BYTE)colorInt[i];
   } else if (compressionMode == 3) {
     drawText("3. Huffman (1 tree for both images)", 0.0f);
 
     // Compress both images
-    huffmanCompressor.compress(DEPTH_SIZE + COLOR_SIZE, combinedDifferential);
+    huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
     Bitset transmitData = huffmanCompressor.getTransmitData();
 
     // Print result
@@ -121,11 +132,53 @@ void GlWindow::renderCallback()
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
 
     // Decompress data
-    huffmanCompressor.decompress(DEPTH_SIZE + COLOR_SIZE, transmitData, combinedData);
+    huffmanCompressor.decompress(FRAME_SIZE, transmitData, combinedData);
+
+    // Reconstruct values
+    for (int i = 1; i < FRAME_SIZE; i++)
+      combinedData[i] = combinedData[i] + combinedData[i - 1];
     for (int i = 0; i < COLOR_SIZE; i++)
       color[i] = (BYTE)combinedData[i];
     for (int i = 0; i < DEPTH_SIZE; i++)
       depth[i] = combinedData[i + COLOR_SIZE];
+  } else if (compressionMode == 4) {
+    drawText("4. Huffman (difference between frames)", 0.0f);
+
+    // Initialize reference frame
+    static bool once = true;
+    if (once) {
+      memset(currentFrameSender, 0, sizeof(INT16) * FRAME_SIZE);
+      memset(currentFrameReceiver, 0, sizeof(INT16) * FRAME_SIZE);
+      once = false;
+    }
+
+    // Compute frame difference
+    INT16 *nextFrame = kinectCamera.getCombinedFrame();
+    for (int i = 0; i < FRAME_SIZE; i++) {
+      differenceFrame[i] = nextFrame[i] - currentFrameSender[i];
+      currentFrameSender[i] = nextFrame[i];
+    }
+    
+    // Compress
+    huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
+    Bitset transmitData = huffmanCompressor.getTransmitData();
+
+    // Results
+    float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
+    drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
+
+    // Decompress
+    huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+
+    // Reconstruct values
+    for (int i = 0; i < FRAME_SIZE; i++)
+      currentFrameReceiver[i] += dataReceived[i];
+    for (int i = 0; i < DEPTH_SIZE; i++)
+      depth[i] = currentFrameReceiver[i];
+    for (int i = 0; i < COLOR_SIZE; i++)
+      color[i] = currentFrameReceiver[i + DEPTH_SIZE];
+
+    std::cout << std::endl;
   }
 
   // Receiver computer renders received frame data
@@ -200,8 +253,13 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       compressionMode = 3;
       break;
     }
+    case '4': {
+      compressionMode = 4;
+      break;
+    }
     case 27:
       closeCallback();
+      break;
   }
 }
 

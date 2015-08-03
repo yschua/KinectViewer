@@ -118,12 +118,6 @@ void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOu
 
   // Deallocate memory
   deallocateTree(huffmanTree);
-
-  for (int i = 1; i < size; i++) {
-    dataOut[i] = dataOut[i] + dataOut[i - 1];
-  }
-
-  //std::cout << std::endl;
 }
 
 void HuffmanCompressor::getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree)
