@@ -1,6 +1,7 @@
 #pragma once
 #include "Core\Timer.h"
 #include <iostream>
+#include <fstream>
 #include <map>
 #include <unordered_map>
 #include <vector>
@@ -38,6 +39,7 @@ typedef boost::dynamic_bitset<BYTE> Bitset;
 class HuffmanCompressor {
   Core::Timer timer;
   std::unordered_map<INT16, int> dataFrequency;
+protected:
   std::priority_queue<Node *, std::vector<Node *>, CompareNodePtr> minHeap;
   std::unordered_map<INT16, std::string> huffmanCodes;
   Bitset transmitData;
@@ -48,7 +50,7 @@ public:
   void compress(int size, const INT16 *data);
   void decompress(int size, Bitset transmitData, UINT16 *dataOut);
   Bitset getTransmitData();
-private:
+protected:
   void getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree);
   void reconstructHuffmanTree(Node *&node);
   std::string getBinary(INT16 value);

@@ -5,8 +5,10 @@
 #include "Common\ModelGenerator.h"
 #include "Common\KinectCamera.h"
 #include "Common\HuffmanCompressor.h"
+#include "Common\StdHuffmanCompressor.h"
 #include "Primitives\Vertex.h"
 #include <iostream>
+#include <fstream>
 #include <gl\glew.h>
 #include <gl\freeglut.h>
 #include <glm\glm.hpp>
