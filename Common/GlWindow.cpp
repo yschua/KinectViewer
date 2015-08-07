@@ -6,6 +6,7 @@ GLuint program;
 Camera camera;
 KinectCamera kinectCamera;
 HuffmanCompressor huffmanCompressor;
+StdHuffmanCompressor stdHuffmanCompressor;
 ModelGenerator model(kinectCamera.DEPTH_WIDTH, kinectCamera.DEPTH_HEIGHT);
 Core::Timer timer;
 const int DEPTH_WIDTH = kinectCamera.DEPTH_WIDTH;
@@ -261,6 +262,20 @@ void GlWindow::mouseMotionCallback(int x, int y)
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
+    case 'c': {
+      INT16 *depth = kinectCamera.getDepthDifferential();
+      INT16 *color = kinectCamera.getColorDifferential();
+      std::ofstream file("depth-differential.txt", std::ios::app);
+      for (int i = 0; i < DEPTH_SIZE; i++)
+        file << depth[i] << " ";
+      file.close();
+
+      file.open("color-differential.txt", std::ios::app);
+      for (int i = 0; i < COLOR_SIZE; i++)
+        file << color[i] << " ";
+      file.close();
+      break;
+    }
     case ' ': {
       camera.resetView();
       break;
