@@ -7,6 +7,8 @@ int main(int argc, char *argv[])
   GlWindow glWindow(argc, argv);
   glWindow.show();
 
+ 
+
   /*Core::Timer timer;
   KinectCamera kinectCamera;
   HuffmanCompressor huffmanCompressor;

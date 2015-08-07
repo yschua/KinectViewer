@@ -1,6 +1,7 @@
 #include "KinectCamera.h"
 
 KinectCamera::KinectCamera() :
+  MAX_DEPTH(4500), // maximum depth value to store in depth image
   COLOR_WIDTH(1920),
   COLOR_HEIGHT(1080),
   DEPTH_WIDTH(512),
@@ -195,15 +196,15 @@ INT16 *KinectCamera::getCombinedDifferential()
 void KinectCamera::computeDepthDifferential()
 {
   depthDifferential[0] = depthBuffer[0];
-  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
-    depthDifferential[i] = (min(depthBuffer[i], 4500) - min(depthBuffer[i - 1], 4500));
+  for (int i = 1; i < DEPTH_SIZE; i++) {
+    depthDifferential[i] = (min(depthBuffer[i], MAX_DEPTH) - min(depthBuffer[i - 1], MAX_DEPTH));
   }
 }
 
 void KinectCamera::computeColorDifferential()
 {
   colorDifferential[0] = colorBufferReduced[0];
-  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH * 3; i++) {
+  for (int i = 1; i < DEPTH_SIZE * 3; i++) {
     colorDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
   }
 }
@@ -221,12 +222,12 @@ void KinectCamera::computeCombinedFrame()
 void KinectCamera::computeCombinedDifferential()
 {
   combinedDifferential[0] = colorBufferReduced[0];
-  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH * 3; i++) {
+  for (int i = 1; i < DEPTH_SIZE * 3; i++) {
     combinedDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
   }
-  combinedDifferential[DEPTH_HEIGHT * DEPTH_WIDTH * 3] = min(depthBuffer[0], 4500) - colorBufferReduced[DEPTH_HEIGHT * DEPTH_WIDTH * 3 - 1];
-  for (int i = 1; i < DEPTH_HEIGHT * DEPTH_WIDTH; i++) {
-    combinedDifferential[DEPTH_HEIGHT * DEPTH_WIDTH * 3 + i] = (min(depthBuffer[i], 4500) - min(depthBuffer[i - 1], 4500));
+  combinedDifferential[DEPTH_SIZE * 3] = min(depthBuffer[0], MAX_DEPTH) - colorBufferReduced[DEPTH_SIZE * 3 - 1];
+  for (int i = 1; i < DEPTH_SIZE; i++) {
+    combinedDifferential[DEPTH_SIZE * 3 + i] = (min(depthBuffer[i], MAX_DEPTH) - min(depthBuffer[i - 1], MAX_DEPTH));
   }
 }
 

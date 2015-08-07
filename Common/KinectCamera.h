@@ -26,6 +26,7 @@ class KinectCamera
   INT16 *combinedFrame;
   INT16 *combinedDifferential;
 public:
+  const int MAX_DEPTH;
   const int COLOR_WIDTH;
   const int COLOR_HEIGHT;
   const int DEPTH_WIDTH;
