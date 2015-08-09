@@ -8,7 +8,7 @@ HuffmanCompressor::~HuffmanCompressor()
 {
 }
 
-void HuffmanCompressor::compress(int size, const INT16 *data)
+Bitset HuffmanCompressor::compress(int size, const INT16 *data)
 {
   // Find frequency of each value
   timer.startTimer();
@@ -75,7 +75,7 @@ void HuffmanCompressor::compress(int size, const INT16 *data)
   timer.stopTimer();
   //std::cout << "Deallocate tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
-  //std::cout << std::endl;
+  return transmitData;
 }
 
 void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOut)
@@ -176,9 +176,4 @@ void HuffmanCompressor::deallocateTree(Node *node)
     deallocateTree(node->right);
     delete node;
   }
-}
-
-Bitset HuffmanCompressor::getTransmitData()
-{
-  return transmitData;
 }

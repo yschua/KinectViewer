@@ -37,9 +37,9 @@ struct CompareNodePtr {
 typedef boost::dynamic_bitset<BYTE> Bitset;
 
 class HuffmanCompressor {
-  Core::Timer timer;
   std::unordered_map<INT16, int> dataFrequency;
 protected:
+  Core::Timer timer;
   std::priority_queue<Node *, std::vector<Node *>, CompareNodePtr> minHeap;
   std::unordered_map<INT16, std::string> huffmanCodes;
   Bitset transmitData;
@@ -47,9 +47,8 @@ protected:
 public:
   HuffmanCompressor();
   ~HuffmanCompressor();
-  void compress(int size, const INT16 *data);
+  Bitset compress(int size, const INT16 *data);
   void decompress(int size, Bitset transmitData, UINT16 *dataOut);
-  Bitset getTransmitData();
 protected:
   void getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree);
   void reconstructHuffmanTree(Node *&node);

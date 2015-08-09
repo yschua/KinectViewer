@@ -15,6 +15,7 @@ const int DEPTH_SIZE = 512 * 424;
 const int COLOR_SIZE = 512 * 424 * 3;
 const int FRAME_SIZE = DEPTH_SIZE + COLOR_SIZE;
 int compressionMode = 1;
+bool stdToggle = false;
 
 GlWindow::GlWindow(int argc, char *argv[])
 {
@@ -97,23 +98,30 @@ void GlWindow::renderCallback()
     drawText("2. Huffman (2 trees for each image)", 0.0f);
 
     int depthTransmitSize, colorTransmitSize;
-    // Compress depth image
-    huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
-    Bitset transmitData = huffmanCompressor.getTransmitData();
-    depthTransmitSize = transmitData.size();
-    huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
-    
-    // Compress color image
-    huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
-    transmitData = huffmanCompressor.getTransmitData();
-    colorTransmitSize = transmitData.size();
+    if (stdToggle) {
+      drawText("                                                                          [STANDARDISED]", 0.0f);
+      Bitset transmitData = stdHuffmanCompressor.compress(DATA_DEPTH, depthDifferential);
+      depthTransmitSize = transmitData.size();
+      stdHuffmanCompressor.decompress(DATA_DEPTH, transmitData, depth);
+
+      transmitData = stdHuffmanCompressor.compress(DATA_COLOR, colorDifferential);
+      colorTransmitSize = transmitData.size();
+      stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, colorInt);
+    } else {
+      // Depth image
+      Bitset transmitData = huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
+      depthTransmitSize = transmitData.size();
+      huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
+
+      // Color image
+      transmitData = huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
+      colorTransmitSize = transmitData.size();
+      huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
+    }
 
     // Print result
     float compression_ratio = UNCOMPRESSED_SIZE / (float)(depthTransmitSize + colorTransmitSize);
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Decompress data
-    huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
 
     // Reconstruct values
     for (int i = 1; i < DEPTH_SIZE; i++)
@@ -128,8 +136,7 @@ void GlWindow::renderCallback()
     drawText("3. Huffman (1 tree for both images)", 0.0f);
 
     // Compress both images
-    huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
-    Bitset transmitData = huffmanCompressor.getTransmitData();
+    Bitset transmitData = huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
 
     // Print result
     float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -166,8 +173,7 @@ void GlWindow::renderCallback()
     }
     
     // Compress
-    huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
-    Bitset transmitData = huffmanCompressor.getTransmitData();
+    Bitset transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
 
     // Results
     float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -203,8 +209,7 @@ void GlWindow::renderCallback()
     }
 
     // Compress
-    huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
-    Bitset transmitData = huffmanCompressor.getTransmitData();
+    Bitset transmitData = huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
 
     // Results
     float compression_ratio = COLOR_SIZE * 8 / (float)transmitData.size();
@@ -276,6 +281,28 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       file.close();
       break;
     }
+    //////// temporary /////////
+    //case 'q': {
+    //  INT16 *depth = kinectCamera.getDepthDifferential();
+    //  INT16 *color = kinectCamera.getColorDifferential();
+    //  INT16 *combined = kinectCamera.getCombinedDifferential();
+    //  INT16 *dataReceived = new INT16[FRAME_SIZE];
+
+    //  Bitset data = stdHuffmanCompressor.compress(DATA_DEPTH, depth);
+    //  stdHuffmanCompressor.decompress(DATA_DEPTH, data, dataReceived);
+
+    //  std::ofstream file("debug-output.txt");
+    //  for (int i = 0; i < 500; i++)
+    //    file << depth[i] << " ";
+    //  file << std::endl << std::endl;
+    //  for (int i = 0; i < 500; i++)
+    //    file << dataReceived[i] << " ";
+    //  file.close();
+
+    //  delete[] dataReceived;
+    //  break;
+    //}
+    //////// temporary /////////
     case ' ': {
       camera.resetView();
       break;
@@ -314,6 +341,10 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     }
     case '5': {
       compressionMode = 5;
+      break;
+    }
+    case 'z': {
+      stdToggle = !stdToggle;
       break;
     }
     case 27:
