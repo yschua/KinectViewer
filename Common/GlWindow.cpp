@@ -99,12 +99,13 @@ void GlWindow::renderCallback()
 
     int depthTransmitSize, colorTransmitSize;
     if (stdToggle) {
-      drawText("                                                                          [STANDARDISED]", 0.0f);
-      Bitset transmitData = stdHuffmanCompressor.compress(DATA_DEPTH, depthDifferential);
+      drawText("                                                                  [STANDARDISED]", 0.0f);
+      Bitset transmitData;
+      stdHuffmanCompressor.compress(DATA_DEPTH, transmitData, depthDifferential);
       depthTransmitSize = transmitData.size();
       stdHuffmanCompressor.decompress(DATA_DEPTH, transmitData, depth);
 
-      transmitData = stdHuffmanCompressor.compress(DATA_COLOR, colorDifferential);
+      stdHuffmanCompressor.compress(DATA_COLOR, transmitData, colorDifferential);
       colorTransmitSize = transmitData.size();
       stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, colorInt);
     } else {
@@ -119,7 +120,7 @@ void GlWindow::renderCallback()
       huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
     }
 
-    // Print result
+    // Display result
     float compression_ratio = UNCOMPRESSED_SIZE / (float)(depthTransmitSize + colorTransmitSize);
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
 
@@ -135,15 +136,22 @@ void GlWindow::renderCallback()
     /******************** HUFFMAN DIFFERENTIAL 2 **************************/
     drawText("3. Huffman (1 tree for both images)", 0.0f);
 
-    // Compress both images
-    Bitset transmitData = huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
+    Bitset transmitData;
+    if (stdToggle) {
+      drawText("                                                                  [STANDARDISED]", 0.0f);
+      stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, combinedDifferential);
+      stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, dataReceived);
+    } else {
+      // Compress both images
+       transmitData = huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
+
+      // Decompress data
+      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+    }
 
     // Print result
     float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Decompress data
-    huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
 
     // Reconstruct values
     for (int i = 1; i < FRAME_SIZE; i++)

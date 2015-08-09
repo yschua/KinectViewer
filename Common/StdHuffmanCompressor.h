@@ -35,7 +35,7 @@ class StdHuffmanCompressor : public HuffmanCompressor {
 public:
   StdHuffmanCompressor();
   ~StdHuffmanCompressor();
-  Bitset compress(DataType dataType, const INT16 *data);
+  void compress(DataType dataType, Bitset &transmitData, const INT16 *data);
   void decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut); // change dataOut to INT16
 private:
   void constructHistogram();

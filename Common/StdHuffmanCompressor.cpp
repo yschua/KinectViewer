@@ -10,11 +10,17 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   
   constructHistogram();
   std::cout << "Finish histogram" << std::endl;
+
+ 
   constructTable(DATA_DEPTH, depthHistogram);
+
   std::cout << "Finish depth table" << std::endl;
+
   constructTable(DATA_COLOR, colorHistogram);
   std::cout << "Finish color table" << std::endl;
-  //constructTable(DATA_COMBINED, combinedHistogram);
+  constructTable(DATA_COMBINED, combinedHistogram);
+
+  exit(EXIT_SUCCESS);
 
   // test
   //INT16 values[] = { 1989, -1080, 0,  16, 248, -506};
@@ -41,7 +47,7 @@ StdHuffmanCompressor::~StdHuffmanCompressor()
 {
 }
 
-Bitset StdHuffmanCompressor::compress(DataType dataType, const INT16 *data)
+void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, const INT16 *data)
 {
   timer.startTimer();
   // TODO: How to use a mapTable variable to assign to references depth,color map tables??
@@ -69,8 +75,8 @@ Bitset StdHuffmanCompressor::compress(DataType dataType, const INT16 *data)
   }
   std::reverse(encodedData.begin(), encodedData.end());
   timer.stopTimer();
+  transmitData = Bitset(encodedData);
   //std::cout << timer.getElapsedTime() << std::endl;
-  return Bitset(encodedData);
 }
 
 void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut)
