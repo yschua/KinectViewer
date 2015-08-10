@@ -38,6 +38,7 @@ public:
   void compress(DataType dataType, Bitset &transmitData, const INT16 *data);
   void decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut); // change dataOut to INT16
 private:
+  void loadTable();
   void constructHistogram();
   void constructTable(DataType dataType, const Histogram &histogram);
   int extractCode(const Bitset &bitset, int index, int length);

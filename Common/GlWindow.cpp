@@ -180,15 +180,22 @@ void GlWindow::renderCallback()
       currentFrameSender[i] = nextFrame[i];
     }
     
-    // Compress
-    Bitset transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
+    Bitset transmitData;
+    if (stdToggle) {
+      drawText("                                                                  [STANDARDISED]", 0.0f);
+      stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, differenceFrame);
+      stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, dataReceived);
+    } else {
+      // Compress
+      transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
+
+      // Decompress
+      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+    }
 
     // Results
     float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Decompress
-    huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
 
     // Reconstruct values
     for (int i = 0; i < FRAME_SIZE; i++)
@@ -196,7 +203,7 @@ void GlWindow::renderCallback()
     for (int i = 0; i < DEPTH_SIZE; i++)
       depth[i] = currentFrameReceiver[i];
     for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = currentFrameReceiver[i + DEPTH_SIZE];
+      color[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
   
   } else if (compressionMode == 5) {
     /**************** HUFFMAN FRAME DIFFERENTIAL (COLOR ONLY)  *********************/
@@ -216,15 +223,23 @@ void GlWindow::renderCallback()
       currentFrameSender[i] = colorBuffer[i];
     }
 
-    // Compress
-    Bitset transmitData = huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
+
+    Bitset transmitData;
+    if (stdToggle) {
+      drawText("                                                                                    [STANDARDISED]", 0.0f);
+      stdHuffmanCompressor.compress(DATA_COLOR, transmitData, differenceFrame);
+      stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, dataReceived);
+    } else {
+      // Compress
+      transmitData = huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
+
+      // Decompress
+      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+    }
 
     // Results
     float compression_ratio = COLOR_SIZE * 8 / (float)transmitData.size();
     drawText("Compress ratio (color only): " + std::to_string(compression_ratio), 0.1f);
-
-    // Decompress
-    huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
 
     // Reconstruct
     for (int i = 0; i < COLOR_SIZE; i++)

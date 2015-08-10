@@ -8,19 +8,17 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //int value = extractCode(bs, 0, 4);
   //std::cout << value << std::endl;
   
-  constructHistogram();
-  std::cout << "Finish histogram" << std::endl;
+  //constructHistogram();
+  //std::cout << "Finish histogram" << std::endl;
+  //constructTable(DATA_DEPTH, depthHistogram);
+  //std::cout << "Finish depth table" << std::endl;
+  //constructTable(DATA_COLOR, colorHistogram);
+  //std::cout << "Finish color table" << std::endl;
+  //constructTable(DATA_COMBINED, combinedHistogram);
+  //std::cout << "Finish combined table" << std::endl;
 
- 
-  constructTable(DATA_DEPTH, depthHistogram);
-
-  std::cout << "Finish depth table" << std::endl;
-
-  constructTable(DATA_COLOR, colorHistogram);
-  std::cout << "Finish color table" << std::endl;
-  constructTable(DATA_COMBINED, combinedHistogram);
-
-  exit(EXIT_SUCCESS);
+  loadTable();
+  std::cout << "Table loaded." << std::endl;
 
   // test
   //INT16 values[] = { 1989, -1080, 0,  16, 248, -506};
@@ -76,7 +74,7 @@ void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, con
   std::reverse(encodedData.begin(), encodedData.end());
   timer.stopTimer();
   transmitData = Bitset(encodedData);
-  //std::cout << timer.getElapsedTime() << std::endl;
+  //std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
 }
 
 void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut)
@@ -118,7 +116,7 @@ void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitD
     }
   }
   timer.stopTimer();
-  //std::cout << timer.getElapsedTime() << std::endl << std::endl;
+  //std::cout << "Decompress: " << timer.getElapsedTime() << std::endl << std::endl;
 }
 
 void StdHuffmanCompressor::constructHistogram()
@@ -149,6 +147,53 @@ void StdHuffmanCompressor::constructHistogram()
   }
   file.close();
 }
+
+void StdHuffmanCompressor::loadTable()
+{
+  std::ifstream file;
+  int value, index, length;
+  std::string code;
+
+  file.open("maptbl-depth.txt", std::ios::in);
+  while (file >> value >> code) 
+    depthMapTable[value] = code;
+  file.close();
+
+  file.open("maptbl-color.txt", std::ios::in);
+  while (file >> value >> code)
+    colorMapTable[value] = code;
+  file.close();
+
+  file.open("maptbl-combined.txt", std::ios::in);
+  while (file >> value >> code)
+    combinedMapTable[value] = code;
+  file.close();
+
+  file.open("unmaptbl-depth.txt", std::ios::in);
+  file >> depthCodeLength;
+  for (int i = 0; file >> value >> length; i++) {
+    depthUnmapTable[i].value = value;
+    depthUnmapTable[i].length = length;
+  }
+  file.close();
+
+  file.open("unmaptbl-color.txt", std::ios::in);
+  file >> colorCodeLength;
+  for (int i = 0; file >> value >> length; i++) {
+    colorUnmapTable[i].value = value;
+    colorUnmapTable[i].length = length;
+  }
+  file.close();
+
+  file.open("unmaptbl-combined.txt", std::ios::in);
+  file >> combinedCodeLength;
+  for (int i = 0; file >> value >> length; i++) {
+    combinedUnmapTable[i].value = value;
+    combinedUnmapTable[i].length = length;
+  }
+  file.close();
+}
+
 
 void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &histogram)
 {
@@ -184,7 +229,7 @@ void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &hi
   // Write map (compress) table to file
   int longestCodeLength = 0;
   std::ofstream file;
-  file.open("huffmaptbl-" + name + ".txt");
+  file.open("maptbl-" + name + ".txt");
   for (auto it = huffmanCodes.begin(); it != huffmanCodes.end(); ++it) {
     file << it->first << "\t" << it->second << std::endl;
     longestCodeLength = max(longestCodeLength, (int)it->second.size());
@@ -206,9 +251,9 @@ void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &hi
   //file.close();
   INT16 currentValue;
   BYTE currentLength;
-  file.open("huffunmaptbl-" + name + ".txt");
+  file.open("unmaptbl-" + name + ".txt");
   file << longestCodeLength << std::endl;
-  for (int i = 0; i < (2 << longestCodeLength); i++) { // may cause problem
+  for (int i = 0; i < (2 << (longestCodeLength - 1)); i++) { // may cause problem
     if (unmapTable[i].length != 0) {
       currentValue = unmapTable[i].value;
       currentLength = unmapTable[i].length;
@@ -216,7 +261,7 @@ void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &hi
       unmapTable[i].value = currentValue;
       unmapTable[i].length = currentLength;
     }
-    file << i << '\t' << unmapTable[i].value << '\t' << (int)unmapTable[i].length << std::endl;
+    file << unmapTable[i].value << '\t' << (int)unmapTable[i].length << std::endl;
   }
   file.close();
 
