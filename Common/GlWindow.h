@@ -7,6 +7,7 @@
 #include "Common\HuffmanCompressor.h"
 #include "Common\StdHuffmanCompressor.h"
 #include "Primitives\Vertex.h"
+#include "Primitives\DataSize.h"
 #include <iostream>
 #include <fstream>
 #include <gl\glew.h>

@@ -2,12 +2,6 @@
 
 StdHuffmanCompressor::StdHuffmanCompressor()
 {
-  //std::string s = "100111111111";
-  //std::reverse(s.begin(), s.end());
-  //Bitset bs = Bitset(s);
-  //int value = extractCode(bs, 0, 4);
-  //std::cout << value << std::endl;
-  
   //constructHistogram();
   //std::cout << "Finish histogram" << std::endl;
   //constructTable(DATA_DEPTH, depthHistogram);
@@ -19,26 +13,6 @@ StdHuffmanCompressor::StdHuffmanCompressor()
 
   loadTable();
   std::cout << "Table loaded." << std::endl;
-
-  // test
-  //INT16 values[] = { 1989, -1080, 0,  16, 248, -506};
-  //std::string compressed("");
-  //for (int i = 0; i < 6; i++) {
-  //  compressed += huffmanCodes[values[i]];
-  //}
-  //std::cout << "compressed: " << compressed << std::endl;
-  //std::reverse(compressed.begin(), compressed.end());
-  //Bitset transmitData = Bitset(compressed);
-  ////decode
-  //INT16 decodedValue;
-  //int transmitIndex = 0;
-  //for (int i = 0; i < 6; i++) {
-  //  int index = extractCode(transmitData, transmitIndex, longestCodeLength);
-  //  
-  //  INT16 value = huffmanCodesLookup[index].value;
-  //  std::cout << "extracted: " << index << " value: " << value << " index: " << transmitIndex << std::endl;
-  //  transmitIndex += huffmanCodesLookup[index].length;
-  //}
 }
 
 StdHuffmanCompressor::~StdHuffmanCompressor()
@@ -48,72 +22,22 @@ StdHuffmanCompressor::~StdHuffmanCompressor()
 void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, const INT16 *data)
 {
   timer.startTimer();
-  // TODO: How to use a mapTable variable to assign to references depth,color map tables??
-  int size;
   std::string encodedData("");
-  switch (dataType) {
-    case DATA_DEPTH: {
-      size = 512 * 424;
-      for (int i = 0; i < size; i++)
-        encodedData += depthMapTable[data[i]];
-      break;
-    }
-    case DATA_COLOR: {
-      size = 512 * 424 * 3;
-      for (int i = 0; i < size; i++)
-        encodedData += colorMapTable[data[i]];
-      break;
-    }
-    case DATA_COMBINED: {
-      size = 512 * 424 * 4;
-      for (int i = 0; i < size; i++)
-        encodedData += combinedMapTable[data[i]];
-      break;
-    }
-  }
+  for (int i = 0; i < dataSize[dataType]; i++) 
+    encodedData += mapTable[dataType][data[i]];
   std::reverse(encodedData.begin(), encodedData.end());
-  timer.stopTimer();
   transmitData = Bitset(encodedData);
+  timer.stopTimer();
   //std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
 }
 
 void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut)
 {
   timer.startTimer();
-  int size;
-  std::unordered_map<int, LookupValue> unmapTable;
-  int longestCodeLength;
-  switch (dataType) {
-    case DATA_DEPTH: {
-      longestCodeLength = depthCodeLength;
-      size = 512 * 424;
-      for (int i = 0, transmitDataIndex = 0; i < size; i++) {
-        int code = extractCode(transmitData, transmitDataIndex, longestCodeLength);
-        dataOut[i] = depthUnmapTable[code].value;
-        transmitDataIndex += depthUnmapTable[code].length;
-      }
-      break;
-    }
-    case DATA_COLOR: {
-      longestCodeLength = colorCodeLength;
-      size = 512 * 424 * 3;
-      for (int i = 0, transmitDataIndex = 0; i < size; i++) {
-        int code = extractCode(transmitData, transmitDataIndex, longestCodeLength);
-        dataOut[i] = colorUnmapTable[code].value;
-        transmitDataIndex += colorUnmapTable[code].length;
-      }
-      break;
-    }
-    case DATA_COMBINED: {
-      longestCodeLength = combinedCodeLength;
-      size = 512 * 424 * 4;
-      for (int i = 0, transmitDataIndex = 0; i < size; i++) {
-        int code = extractCode(transmitData, transmitDataIndex, longestCodeLength);
-        dataOut[i] = combinedUnmapTable[code].value;
-        transmitDataIndex += combinedUnmapTable[code].length;
-      }
-      break;
-    }
+  for (int i = 0, transmitDataIndex = 0; i < dataSize[dataType]; i++) {
+    int code = extractCode(transmitData, transmitDataIndex, codeLength[dataType]);
+    dataOut[i] = unmapTable[dataType][code].value;
+    transmitDataIndex += unmapTable[dataType][code].length;
   }
   timer.stopTimer();
   //std::cout << "Decompress: " << timer.getElapsedTime() << std::endl << std::endl;
@@ -150,50 +74,42 @@ void StdHuffmanCompressor::constructHistogram()
 
 void StdHuffmanCompressor::loadTable()
 {
+  // Load map tables
+  loadMapTable(DATA_DEPTH, "depth");
+  loadMapTable(DATA_COLOR, "color");
+  loadMapTable(DATA_COMBINED, "combined");
+
+  // Load unmap tables
+  loadUnmapTable(DATA_DEPTH, "depth");
+  loadUnmapTable(DATA_COLOR, "color");
+  loadUnmapTable(DATA_COMBINED, "combined");
+}
+
+void StdHuffmanCompressor::loadMapTable(DataType dataType, std::string name)
+{
   std::ifstream file;
-  int value, index, length;
+  int value;
   std::string code;
 
-  file.open("maptbl-depth.txt", std::ios::in);
-  while (file >> value >> code) 
-    depthMapTable[value] = code;
-  file.close();
-
-  file.open("maptbl-color.txt", std::ios::in);
+  file.open("maptbl-" + name + ".txt", std::ios::in);
   while (file >> value >> code)
-    colorMapTable[value] = code;
-  file.close();
-
-  file.open("maptbl-combined.txt", std::ios::in);
-  while (file >> value >> code)
-    combinedMapTable[value] = code;
-  file.close();
-
-  file.open("unmaptbl-depth.txt", std::ios::in);
-  file >> depthCodeLength;
-  for (int i = 0; file >> value >> length; i++) {
-    depthUnmapTable[i].value = value;
-    depthUnmapTable[i].length = length;
-  }
-  file.close();
-
-  file.open("unmaptbl-color.txt", std::ios::in);
-  file >> colorCodeLength;
-  for (int i = 0; file >> value >> length; i++) {
-    colorUnmapTable[i].value = value;
-    colorUnmapTable[i].length = length;
-  }
-  file.close();
-
-  file.open("unmaptbl-combined.txt", std::ios::in);
-  file >> combinedCodeLength;
-  for (int i = 0; file >> value >> length; i++) {
-    combinedUnmapTable[i].value = value;
-    combinedUnmapTable[i].length = length;
-  }
+    mapTable[dataType][value] = code;
   file.close();
 }
 
+void StdHuffmanCompressor::loadUnmapTable(DataType dataType, std::string name)
+{
+  std::ifstream file;
+  int value, length;
+
+  file.open("unmaptbl-" + name + ".txt", std::ios::in);
+  file >> codeLength[dataType];
+  for (int i = 0; file >> value >> length; i++) {
+    unmapTable[dataType][i].value = value;
+    unmapTable[dataType][i].length = length;
+  }
+  file.close();
+}
 
 void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &histogram)
 {
@@ -266,26 +182,26 @@ void StdHuffmanCompressor::constructTable(DataType dataType, const Histogram &hi
   file.close();
 
   // Load table to data structure
-  switch (dataType) {
-    case DATA_DEPTH: {
-      depthCodeLength = longestCodeLength;
-      depthMapTable = huffmanCodes;
-      depthUnmapTable = unmapTable;
-      break;
-    }
-    case DATA_COLOR: {
-      colorCodeLength = longestCodeLength;
-      colorMapTable = huffmanCodes;
-      colorUnmapTable = unmapTable;
-      break;
-    }
-    case DATA_COMBINED: {
-      combinedCodeLength = longestCodeLength;
-      combinedMapTable = huffmanCodes;
-      combinedUnmapTable = unmapTable;
-      break;
-    }
-  }
+  //switch (dataType) {
+  //  case DATA_DEPTH: {
+  //    depthCodeLength = longestCodeLength;
+  //    depthMapTable = huffmanCodes;
+  //    depthUnmapTable = unmapTable;
+  //    break;
+  //  }
+  //  case DATA_COLOR: {
+  //    colorCodeLength = longestCodeLength;
+  //    colorMapTable = huffmanCodes;
+  //    colorUnmapTable = unmapTable;
+  //    break;
+  //  }
+  //  case DATA_COMBINED: {
+  //    combinedCodeLength = longestCodeLength;
+  //    combinedMapTable = huffmanCodes;
+  //    combinedUnmapTable = unmapTable;
+  //    break;
+  //  }
+  //}
 
   // Deallocate memory
   deallocateTree(huffmanTree);

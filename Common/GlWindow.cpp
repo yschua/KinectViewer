@@ -9,11 +9,6 @@ HuffmanCompressor huffmanCompressor;
 StdHuffmanCompressor stdHuffmanCompressor;
 ModelGenerator model(kinectCamera.DEPTH_WIDTH, kinectCamera.DEPTH_HEIGHT);
 Core::Timer timer;
-const int DEPTH_WIDTH = kinectCamera.DEPTH_WIDTH;
-const int DEPTH_HEIGHT = kinectCamera.DEPTH_HEIGHT;
-const int DEPTH_SIZE = 512 * 424;
-const int COLOR_SIZE = 512 * 424 * 3;
-const int FRAME_SIZE = DEPTH_SIZE + COLOR_SIZE;
 int compressionMode = 1;
 bool stdToggle = false;
 

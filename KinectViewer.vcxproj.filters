@@ -80,5 +80,8 @@
     <ClInclude Include="Common\StdHuffmanCompressor.h">
       <Filter>Header Files</Filter>
     </ClInclude>
+    <ClInclude Include="Primitives\DataSize.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
   </ItemGroup>
 </Project>

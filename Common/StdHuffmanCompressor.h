@@ -2,9 +2,9 @@
 #include "HuffmanCompressor.h"
 
 enum DataType {
-  DATA_DEPTH = 1,
-  DATA_COLOR = 2,
-  DATA_COMBINED = 3,
+  DATA_DEPTH = 0,
+  DATA_COLOR = 1,
+  DATA_COMBINED = 2,
 };
 
 struct LookupValue {
@@ -21,17 +21,10 @@ class StdHuffmanCompressor : public HuffmanCompressor {
   Histogram colorHistogram;
   Histogram combinedHistogram;
 
-  MapTable depthMapTable;
-  MapTable colorMapTable;
-  MapTable combinedMapTable;
-
-  UnmapTable depthUnmapTable;
-  UnmapTable colorUnmapTable;
-  UnmapTable combinedUnmapTable;
-
-  int depthCodeLength;
-  int colorCodeLength;
-  int combinedCodeLength;
+  MapTable mapTable[3];
+  UnmapTable unmapTable[3];
+  int codeLength[3];
+  int *dataSize = new int[3]{ DEPTH_SIZE, COLOR_SIZE, COMBINED_SIZE };
 public:
   StdHuffmanCompressor();
   ~StdHuffmanCompressor();
@@ -39,6 +32,8 @@ public:
   void decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut); // change dataOut to INT16
 private:
   void loadTable();
+  void loadMapTable(DataType dataType, std::string name);
+  void loadUnmapTable(DataType dataType, std::string name);
   void constructHistogram();
   void constructTable(DataType dataType, const Histogram &histogram);
   int extractCode(const Bitset &bitset, int index, int length);

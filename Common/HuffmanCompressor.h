@@ -1,5 +1,6 @@
 #pragma once
 #include "Core\Timer.h"
+#include "Primitives\DataSize.h"
 #include <iostream>
 #include <fstream>
 #include <map>
