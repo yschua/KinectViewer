@@ -16,7 +16,7 @@ int ModelGenerator::getNumVertices()
   return pointCloud.numVertices;
 }
 
-PointCloud ModelGenerator::getModel()
+PointCloud &ModelGenerator::getPointCloud()
 {
   return pointCloud;
 }

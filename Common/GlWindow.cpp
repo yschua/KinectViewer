@@ -282,21 +282,31 @@ void GlWindow::mouseMotionCallback(int x, int y)
   renderCallback();
 }
 
+int fileCount = 1;
+
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
     case 'c': {
-      INT16 *depth = kinectCamera.getDepthDifferential();
-      INT16 *color = kinectCamera.getColorDifferential();
-      std::ofstream file("depth-differential.txt", std::ios::app);
-      for (int i = 0; i < DEPTH_SIZE; i++)
-        file << depth[i] << " ";
+      std::ofstream file("point-cloud" + std::to_string(fileCount++) + ".txt");
+      PointCloud pointCloud = model.getPointCloud();
+      for (int i = 0; i < pointCloud.numVertices; i++) {
+        file << pointCloud.vertices[i].position.x << ' ' <<
+          pointCloud.vertices[i].position.y << ' ' <<
+          pointCloud.vertices[i].position.z << std::endl;
+      }
       file.close();
+      //INT16 *depth = kinectCamera.getDepthDifferential();
+      //INT16 *color = kinectCamera.getColorDifferential();
+      //std::ofstream file("depth-differential.txt", std::ios::app);
+      //for (int i = 0; i < DEPTH_SIZE; i++)
+      //  file << depth[i] << " ";
+      //file.close();
 
-      file.open("color-differential.txt", std::ios::app);
-      for (int i = 0; i < COLOR_SIZE; i++)
-        file << color[i] << " ";
-      file.close();
+      //file.open("color-differential.txt", std::ios::app);
+      //for (int i = 0; i < COLOR_SIZE; i++)
+      //  file << color[i] << " ";
+      //file.close();
       break;
     }
     //////// temporary /////////
