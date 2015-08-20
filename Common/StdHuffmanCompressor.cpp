@@ -11,12 +11,13 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //constructTable(DATA_COMBINED, combinedHistogram);
   //std::cout << "Finish combined table" << std::endl;
 
-  loadTable();
-  std::cout << "Table loaded." << std::endl;
+  //loadTable();
+  //std::cout << "Table loaded." << std::endl;
 }
 
 StdHuffmanCompressor::~StdHuffmanCompressor()
 {
+  delete[] dataSize;
 }
 
 void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, const INT16 *data)
