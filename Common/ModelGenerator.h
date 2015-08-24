@@ -19,6 +19,7 @@ public:
   ~ModelGenerator();
   int getNumVertices();
   PointCloud &getPointCloud();
+  void updatePointCloud(PointCloud pointCloud);
   void updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer);
   void loadModel();
 };

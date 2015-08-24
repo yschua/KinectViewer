@@ -13,18 +13,48 @@
 using namespace std;
 using namespace TooN;
 
+int numPts = 7;
+vector<Vector<4> > x(numPts);
+vector<Vector<4> > y(numPts);
+vector<Vector<4> > xp(numPts);
+
 double dist2(Vector<4> p, Vector<4> q)
 {
   return (p - q) * (p - q);
 }
 
+void findNearest(const Vector<4> &xp, double &distance, Vector<4> &e, int &corresPt)
+{
+  double minDistance2 = 1e9;
+  for (int j = 0; j < y.size(); j++) {
+    double distance2 = dist2(xp, y[j]);
+    if (distance2 < minDistance2) {
+      minDistance2 = distance2;
+      e = y[j] - xp;
+      corresPt = j;
+    }
+  }
+  distance = minDistance2;
+}
+
+void getJacobian(Matrix<3, 6>& J, const Vector<4> &xp)
+{
+  J(0, 0) = 1;
+  J(0, 4) = xp[2]; // z
+  J(0, 5) = -xp[1]; // -y
+
+  J(1, 1) = 1;
+  J(1, 3) = -xp[2]; // -z
+  J(1, 5) = xp[0]; // x
+
+  J(2, 2) = 1;
+  J(2, 3) = xp[1]; // y
+  J(2, 4) = -xp[0]; // -x
+}
+
 int main()
 {
   // Initial set of points "x"
-  int numPts = 7;
-  vector<Vector<4> > x(numPts);
-  vector<Vector<4> > y(numPts);
-  vector<Vector<4> > xp(numPts);
   x[0] = xp[0] = makeVector(-3, 2, 0.1, 1);
   x[1] = xp[1] = makeVector(-2, 1, 0.2, 1);
   x[2] = xp[2] = makeVector(-1, -2, 0.3, 1);
@@ -58,31 +88,34 @@ int main()
 
       // Find nearest point
       int corresPt;
-      for (int j = 0; j < y.size(); j++) {
-        double distance2 = dist2(xp[i], y[j]);
-        if (distance2 < minDistance2) {
-          minDistance2 = distance2;
-          e = y[j] - xp[i];
-          corresPt = j;
-        }
-      }
+      //for (int j = 0; j < y.size(); j++) {
+      //  double distance2 = dist2(xp[i], y[j]);
+      //  if (distance2 < minDistance2) {
+      //    minDistance2 = distance2;
+      //    e = y[j] - xp[i];
+      //    corresPt = j;
+      //  }
+      //}
+      findNearest(xp[i], minDistance2, e, corresPt);
 
       // Found e for nearest point
-      cout << "Correspondence: " << i << "->" << corresPt << " e: " << sqrt(minDistance2) << endl;
+      cout << "Correspondence: " << i << "->" << corresPt << " e: " << minDistance2 << endl;
       errorSum += minDistance2;
 
       // Compute Jacobian
-      J(0, 0) = 1;
-      J(0, 4) = xp[i][2]; // z
-      J(0, 5) = -xp[i][1]; // -y
+      //J(0, 0) = 1;
+      //J(0, 4) = xp[i][2]; // z
+      //J(0, 5) = -xp[i][1]; // -y
 
-      J(1, 1) = 1;
-      J(1, 3) = -xp[i][2]; // -z
-      J(1, 5) = xp[i][0]; // x
+      //J(1, 1) = 1;
+      //J(1, 3) = -xp[i][2]; // -z
+      //J(1, 5) = xp[i][0]; // x
 
-      J(2, 2) = 1;
-      J(2, 3) = xp[i][1]; // y
-      J(2, 4) = -xp[i][0]; // -x
+      //J(2, 2) = 1;
+      //J(2, 3) = xp[i][1]; // y
+      //J(2, 4) = -xp[i][0]; // -x
+
+      getJacobian(J, xp[i]);
 
       // WLS estimation
       w.add_mJ(e[0], J[0]);

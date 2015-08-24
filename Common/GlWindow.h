@@ -6,6 +6,7 @@
 #include "Common\KinectCamera.h"
 #include "Common\HuffmanCompressor.h"
 #include "Common\StdHuffmanCompressor.h"
+#include "Common\ICP.h"
 #include "Primitives\Vertex.h"
 #include "Primitives\DataSize.h"
 #include <iostream>
@@ -29,5 +30,8 @@ protected:
   static void mouseMotionCallback(int x, int y);
   static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
   static void closeCallback();
+private:
+  // ICP test functions
+  static void loadPointCloud();
 };
 

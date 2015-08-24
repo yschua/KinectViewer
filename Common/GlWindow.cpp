@@ -12,6 +12,11 @@ Core::Timer timer;
 int compressionMode = 1;
 bool stdToggle = false;
 
+// ICP test objects
+PointCloud currentPtCloud, nextPtCloud, estimatePtCloud;
+int icpToggle = 0;
+ICP icp;
+
 GlWindow::GlWindow(int argc, char *argv[])
 {
   glutInit(&argc, argv);
@@ -28,6 +33,31 @@ GlWindow::GlWindow(int argc, char *argv[])
   Core::ShaderLoader shaderLoader;
   program = shaderLoader.createProgram("Shaders\\VertexShader.glsl",
                                        "Shaders\\FragmentShader.glsl");
+
+  ////////////////////////////////////////////////////////////////////////
+  // ICP test initializer
+  loadPointCloud();
+  icp.computeTransformation();
+  SE3<> transform = icp.getTransformation();
+
+  for (int i = 0; i < currentPtCloud.vertices.size(); i++) {
+    float x = currentPtCloud.vertices[i].position.x;
+    float y = currentPtCloud.vertices[i].position.y;
+    float z = currentPtCloud.vertices[i].position.z;
+    Vector<4> p = makeVector(x, y, z, 1);
+    p = transform * p;
+
+    x = p[0]; y = p[1]; z = p[2];
+
+    int row = i % DEPTH_WIDTH;
+    int col = (i - row) / DEPTH_WIDTH;
+    //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+      //estimatePtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
+    //else
+      estimatePtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
+  }
+  ////////////////////////////////////////////////////////////////////////
+
 }
 
 GlWindow::~GlWindow()
@@ -247,6 +277,26 @@ void GlWindow::renderCallback()
 
   // Receiver computer renders received frame data
   model.updatePointCloud(depth, color);
+
+  ////////////////////////////////////////////////////////////////////////
+  // ICP point cloud rendering
+  if (stdToggle) {
+    for (int i = 0; i < currentPtCloud.vertices.size(); i++) {
+      currentPtCloud.vertices[i].color.b = 1;
+      currentPtCloud.vertices[i].color.g = 1;
+      nextPtCloud.vertices[i].color.b = 1;
+      nextPtCloud.vertices[i].color.g = 1;
+    }
+  }
+  //icpToggle = 3;
+  if (icpToggle == 0)
+    model.updatePointCloud(currentPtCloud);
+  else if (icpToggle == 1)
+    model.updatePointCloud(nextPtCloud);
+  else if (icpToggle == 2)
+    model.updatePointCloud(estimatePtCloud);
+  ////////////////////////////////////////////////////////////////////////
+
   shaderRender();
 
   timer.stopTimer();
@@ -351,16 +401,27 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       camera.moveCameraPosition(-1, 0, 0);
       break;
     }
+    case 'z': {
+      camera.moveCameraPosition(0, 1, 0);
+      break;
+    }
+    case 'x': {
+      camera.moveCameraPosition(0, -1, 0);
+      break;
+    }
     case '1': {
       compressionMode = 1;
+      icpToggle = 0;
       break;
     }
     case '2': {
-      compressionMode = 2;
+      //compressionMode = 2;
+      icpToggle = 1;
       break;
     }
     case '3': {
-      compressionMode = 3;
+      //compressionMode = 3;
+      icpToggle = 2;
       break;
     }
     case '4': {
@@ -371,7 +432,7 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       compressionMode = 5;
       break;
     }
-    case 'z': {
+    case 'm': {
       stdToggle = !stdToggle;
       break;
     }
@@ -385,4 +446,35 @@ void GlWindow::closeCallback()
 {
   std::cout << "GLUT: Finished" << std::endl;
   glutLeaveMainLoop();
+}
+
+void GlWindow::loadPointCloud()
+{
+  currentPtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+  nextPtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+  estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+
+  std::ifstream file;
+  file.open("point-cloud1.txt", std::ios::in);
+  float x, y, z;
+  for (int i = 0; file >> x >> y >> z; i++) {
+    int row = i % DEPTH_WIDTH;
+    int col = (i - row) / DEPTH_WIDTH;
+    if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+      currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
+    else
+      currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
+  }
+  file.close();
+  file.open("point-cloud2.txt", std::ios::in);
+  for (int i = 0; file >> x >> y >> z; i++) {
+    int row = i % DEPTH_WIDTH;
+    int col = (i - row) / DEPTH_WIDTH;
+    if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+      nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
+    else
+      nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
+  }
+  file.close();
+  std::cout << "Point clouds loaded" << std::endl;
 }
