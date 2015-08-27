@@ -10,4 +10,6 @@ enum DataSize {
   COLOR_SIZE = DEPTH_SIZE * 3,
   COMBINED_SIZE = DEPTH_SIZE * 4,
   FRAME_SIZE = COMBINED_SIZE,
+
+  MAX_DEPTH = 4500, // mm
 };

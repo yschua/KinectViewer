@@ -6,13 +6,14 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //std::cout << "Finish histogram" << std::endl;
   //constructTable(DATA_DEPTH, depthHistogram);
   //std::cout << "Finish depth table" << std::endl;
-  //constructTable(DATA_COLOR, colorHistogram);
+  //constructTable(DATA_COLOR, colorHistogram); 
   //std::cout << "Finish color table" << std::endl;
   //constructTable(DATA_COMBINED, combinedHistogram);
   //std::cout << "Finish combined table" << std::endl;
 
   //loadTable();
   //std::cout << "Table loaded." << std::endl;
+  std::cout << "No standard table loaded." << std::endl;
 }
 
 StdHuffmanCompressor::~StdHuffmanCompressor()

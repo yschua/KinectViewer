@@ -11,24 +11,17 @@ HuffmanCompressor::~HuffmanCompressor()
 Bitset HuffmanCompressor::compress(int size, const INT16 *data)
 {
   // Find frequency of each value
-  timer.startTimer();
   for (UINT i = 0; i < size; ++i)
     ++dataFrequency[data[i]];
   dataFrequency[INT16_MAX] = 1; // use max value as the pseudo EOF
-  timer.stopTimer();
-  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Store each frequency as a (leaf) node in minimum heap
-  timer.startTimer();
   for (auto it = dataFrequency.begin(); it != dataFrequency.end(); ++it) {
     Node *node = new Node(it->first, it->second);
     minHeap.push(node);
   }
-  timer.stopTimer();
-  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Generate Huffman tree
-  timer.startTimer();
   while (minHeap.size() != 1) {
     Node *right = minHeap.top();
     minHeap.pop();
@@ -37,61 +30,43 @@ Bitset HuffmanCompressor::compress(int size, const INT16 *data)
     minHeap.push(new Node(left->frequency + right->frequency, left, right)); // Create internal node
   }
   Node *huffmanTree = minHeap.top();
-  timer.stopTimer();
-  //std::cout << "Generate Huffman tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Get Huffman codes for each value and generate encoded Huffman tree
-  timer.startTimer();
   std::string code("");
   std::string encodedHuffmanTree("");
   getHuffmanCode(huffmanTree, code, encodedHuffmanTree);
   std::reverse(encodedHuffmanTree.begin(), encodedHuffmanTree.end()); // TODO: try encodedHuffmanTree = bit + encodedHuffmanTree to see if performance is better
-  timer.stopTimer();
-  //std::cout << "Generate encoded Huffman tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Encode data values
-  timer.startTimer();
   std::string encodedData("");
   for (UINT i = 0; i < size; ++i) {
     encodedData += huffmanCodes[data[i]];
   }
   encodedData += huffmanCodes[INT16_MAX]; // add pseudo EOF
   std::reverse(encodedData.begin(), encodedData.end());
-  timer.stopTimer();
-  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Convert data to bit array
-  timer.startTimer();
   transmitData = Bitset(encodedData + encodedHuffmanTree);
-  timer.stopTimer();
-  //std::cout << timer.getElapsedTime() / 1000 << std::endl;
 
   // Deallocate memory
-  timer.startTimer();
   deallocateTree(huffmanTree);
   minHeap.pop();
   dataFrequency.clear();
   huffmanCodes.clear();
-  timer.stopTimer();
-  //std::cout << "Deallocate tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   return transmitData;
 }
 
-void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOut)
+void HuffmanCompressor::decompress(int size, Bitset transmitData, INT16 *dataOut)
 {
   transmitDataIndex = 0;
 
   // Reconstruct Huffman tree
   Node *huffmanTree = NULL;
-  timer.startTimer();
   reconstructHuffmanTree(huffmanTree);
   ++transmitDataIndex; // dispose last bit
-  timer.stopTimer();
-  //std::cout << "Reconstruct tree: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Decode data values
-  timer.startTimer();
   UINT i = 0; // temp
   Node *head = huffmanTree;
   Node *current = head;
@@ -108,11 +83,7 @@ void HuffmanCompressor::decompress(int size, Bitset transmitData, UINT16 *dataOu
       current = (transmitData[transmitDataIndex] == 0) ? current->left : current->right;
     }
     ++transmitDataIndex;
-    //timer.stopTimer();
-    //std::cout << "Read bit: " << timer.getElapsedTime() << std::endl;
   }
-  timer.stopTimer();
-  //std::cout << "Decode: " << timer.getElapsedTime() / 1000 << std::endl;
 
   // Deallocate memory
   deallocateTree(huffmanTree);

@@ -10,11 +10,14 @@
 #include "Primitives\DataSize.h"
 #include <iostream>
 #include <fstream>
+#include <Windows.h>
 #include <gl\glew.h>
 #include <gl\freeglut.h>
 #include <glm\glm.hpp>
 #include <glm\gtx\transform.hpp>
 #include <glm\gtc\matrix_transform.hpp>
+
+#define NOMINMAX
 
 class GlWindow {
 public:
@@ -22,6 +25,7 @@ public:
   ~GlWindow();
   void show(void);
 protected:
+  static void dataToDiff(const UINT16 *dataIn, INT16 *diffOut);
   static void shaderRender();
   static void drawText(std::string text, float offset);
   static void renderCallback();
@@ -30,4 +34,3 @@ protected:
   static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
   static void closeCallback();
 };
-

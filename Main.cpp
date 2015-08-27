@@ -2,10 +2,17 @@
 #include "Common\KinectCamera.h"
 #include "Common\HuffmanCompressor.h"
 
+GlWindow *glWindow;
+
 int main(int argc, char *argv[])
 {
-  GlWindow glWindow(argc, argv);
-  glWindow.show();
+  glWindow = new GlWindow(argc, argv);
+  glWindow->show();
+
+ // GlWindow glWindow(argc, argv);
+ 
+
+ // glWindow.show();
 
  
 

@@ -49,7 +49,7 @@ public:
   HuffmanCompressor();
   ~HuffmanCompressor();
   Bitset compress(int size, const INT16 *data);
-  void decompress(int size, Bitset transmitData, UINT16 *dataOut);
+  void decompress(int size, Bitset transmitData, INT16 *dataOut);
 protected:
   void getHuffmanCode(Node *node, std::string code, std::string &encodedHuffmanTree);
   void reconstructHuffmanTree(Node *&node);

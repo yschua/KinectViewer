@@ -1,18 +1,17 @@
 #include "GlWindow.h"
 
 // Class members
-// Declare as global variables due to GLUT limitation
 GLuint program;
-Camera camera;
+Camera glCamera;
 KinectCamera kinectCamera;
 HuffmanCompressor huffmanCompressor;
 StdHuffmanCompressor stdHuffmanCompressor;
-ModelGenerator model(kinectCamera.DEPTH_WIDTH, kinectCamera.DEPTH_HEIGHT);
+ModelGenerator model(DEPTH_WIDTH, DEPTH_HEIGHT);
 Core::Timer timer;
 int compressionMode = 1;
 bool stdToggle = false;
 
-GlWindow::GlWindow(int argc, char *argv[])
+GlWindow::GlWindow(int argc, char **argv)
 {
   glutInit(&argc, argv);
   glutInitWindowSize(800, 600);
@@ -21,7 +20,7 @@ GlWindow::GlWindow(int argc, char *argv[])
   glewInit();
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_POINT_SMOOTH);
-  //glPointSize(1.0f);
+  //glPointSize(1.f);
   
   model.loadModel();
 
@@ -46,6 +45,20 @@ void GlWindow::show()
   glutMainLoop();
 }
 
+// Get differential for depth data
+void GlWindow::dataToDiff(const UINT16 *data, INT16 *diff)
+{
+  diff[0] = data[0];
+  for (int i = 1; i < DEPTH_SIZE; i++)
+    diff[i] = std::min(int(data[i]), int(MAX_DEPTH)) - std::min(int(data[i - 1]), int(MAX_DEPTH));
+}
+
+// Get differential for color data
+//void GlWindow::dataToDiff(const BYTE *data, INT16 *diff)
+//{
+//
+//}
+
 void GlWindow::drawText(std::string text, float offset)
 {
   glUseProgram(0);
@@ -58,7 +71,7 @@ void GlWindow::drawText(std::string text, float offset)
 
 void GlWindow::renderCallback()
 {
-  timer.startTimer();
+  timer.startTimer(); // FPS timer
   glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
   glClearColor(0, 0, 0, 1);
   
@@ -66,18 +79,34 @@ void GlWindow::renderCallback()
   kinectCamera.update();
 
   // Data processing and simulated transmission
-  static UINT16 depth[DEPTH_SIZE];
-  static UINT16 colorInt[COLOR_SIZE];
-  static BYTE color[COLOR_SIZE];
-  static UINT16 dataReceived[FRAME_SIZE];
-  static INT16 currentFrameSender[FRAME_SIZE];
-  static INT16 currentFrameReceiver[FRAME_SIZE];
-  static INT16 differenceFrame[FRAME_SIZE];
+  // Send buffer
   UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
   BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
+
+  static INT16 depthDiffSend[DEPTH_SIZE];
   INT16 *depthDifferential = kinectCamera.getDepthDifferential();
   INT16 *colorDifferential = kinectCamera.getColorDifferential();
   INT16 *combinedDifferential = kinectCamera.getCombinedDifferential();
+
+  // Receive buffer
+  static UINT16 depth[DEPTH_SIZE];
+  static BYTE color[COLOR_SIZE];
+
+  static INT16 depthDiffReceive[DEPTH_SIZE];
+  static INT16 colorDiffReceive[COLOR_SIZE];
+
+  static UINT16 colorInt[COLOR_SIZE]; // temporary for stdhuffman
+  static UINT16 dataReceived[FRAME_SIZE]; // temporary for stdhuffman
+
+  static INT16 frameReceive[FRAME_SIZE];
+
+  static INT16 currentFrameSender[FRAME_SIZE];
+  static INT16 currentFrameReceiver[FRAME_SIZE];
+  static INT16 differenceFrame[FRAME_SIZE];
+
+  dataToDiff(depthBuffer, depthDiffSend);
+
+
   const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
   
   if (compressionMode == 1) {
@@ -105,14 +134,14 @@ void GlWindow::renderCallback()
       stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, colorInt);
     } else {
       // Depth image
-      Bitset transmitData = huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
+      Bitset transmitData = huffmanCompressor.compress(DEPTH_SIZE, depthDiffSend);
       depthTransmitSize = transmitData.size();
-      huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
+      huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depthDiffReceive);
 
       // Color image
       transmitData = huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
       colorTransmitSize = transmitData.size();
-      huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
+      huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorDiffReceive);
     }
 
     // Display result
@@ -120,12 +149,13 @@ void GlWindow::renderCallback()
     drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
 
     // Reconstruct values
+    depth[0] = depthDiffReceive[0];
     for (int i = 1; i < DEPTH_SIZE; i++)
-      depth[i] = depth[i] + depth[i - 1];
+      depth[i] = depthDiffReceive[i] + depth[i - 1];
     for (int i = 1; i < COLOR_SIZE; i++)
-      colorInt[i] = colorInt[i] + colorInt[i - 1];
+      colorDiffReceive[i] = colorDiffReceive[i] + colorDiffReceive[i - 1];
     for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = (BYTE)colorInt[i];
+      color[i] = (BYTE)colorDiffReceive[i];
 
   } else if (compressionMode == 3) {
     /******************** HUFFMAN DIFFERENTIAL 2 **************************/
@@ -141,7 +171,7 @@ void GlWindow::renderCallback()
        transmitData = huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
 
       // Decompress data
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+      huffmanCompressor.decompress(FRAME_SIZE, transmitData, frameReceive);
     }
 
     // Print result
@@ -150,11 +180,11 @@ void GlWindow::renderCallback()
 
     // Reconstruct values
     for (int i = 1; i < FRAME_SIZE; i++)
-      dataReceived[i] = dataReceived[i] + dataReceived[i - 1];
+      frameReceive[i] = frameReceive[i] + frameReceive[i - 1];
     for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = (BYTE)dataReceived[i];
+      color[i] = (BYTE)frameReceive[i];
     for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = dataReceived[i + COLOR_SIZE];
+      depth[i] = frameReceive[i + COLOR_SIZE];
 
   } else if (compressionMode == 4) {
     /******************** HUFFMAN FRAME DIFFERENTIAL  **************************/
@@ -185,7 +215,7 @@ void GlWindow::renderCallback()
       transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
 
       // Decompress
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
+      huffmanCompressor.decompress(FRAME_SIZE, transmitData, frameReceive);
     }
 
     // Results
@@ -200,49 +230,6 @@ void GlWindow::renderCallback()
     for (int i = 0; i < COLOR_SIZE; i++)
       color[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
   
-  } else if (compressionMode == 5) {
-    /**************** HUFFMAN FRAME DIFFERENTIAL (COLOR ONLY)  *********************/
-    drawText("5. Huffman (difference between frames, color only)", 0.0f);
-
-    // Initialize reference frame
-    static bool once = true;
-    if (once) {
-      memset(currentFrameSender, 0, sizeof(INT16) * COLOR_SIZE);
-      memset(currentFrameReceiver, 0, sizeof(INT16) * COLOR_SIZE);
-      once = false;
-    }
-
-    // Compute frame difference
-    for (int i = 0; i < COLOR_SIZE; i++) {
-      differenceFrame[i] = colorBuffer[i] - currentFrameSender[i];
-      currentFrameSender[i] = colorBuffer[i];
-    }
-
-
-    Bitset transmitData;
-    if (stdToggle) {
-      drawText("                                                                                    [STANDARDISED]", 0.0f);
-      stdHuffmanCompressor.compress(DATA_COLOR, transmitData, differenceFrame);
-      stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, dataReceived);
-    } else {
-      // Compress
-      transmitData = huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
-
-      // Decompress
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
-    }
-
-    // Results
-    float compression_ratio = COLOR_SIZE * 8 / (float)transmitData.size();
-    drawText("Compress ratio (color only): " + std::to_string(compression_ratio), 0.1f);
-
-    // Reconstruct
-    for (int i = 0; i < COLOR_SIZE; i++)
-      currentFrameReceiver[i] += dataReceived[i];
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = 10;
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = currentFrameReceiver[i];
   }
 
   // Receiver computer renders received frame data
@@ -257,9 +244,9 @@ void GlWindow::renderCallback()
 void GlWindow::shaderRender()
 {
   glm::mat4 modelMatrix = glm::scale(glm::vec3(0.2f, 0.2f, 0.2f));
-  //modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-  //modelMatrix = glm::translate(modelMatrix, glm::vec3(-256.0f, -212.0f, -1000.0f));
-  glm::mat4 viewMatrix = camera.getViewMatrix();
+  // modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+  // modelMatrix = glm::translate(modelMatrix, glm::vec3(-256.0f, -212.0f, -1000.0f));
+  glm::mat4 viewMatrix = glCamera.getViewMatrix();
   glm::mat4 projectionMatrix = glm::perspective(45.0f, 64.0f / 53.0f, 0.000001f, 10000.0f);
   glm::mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
 
@@ -272,33 +259,33 @@ void GlWindow::shaderRender()
 void GlWindow::mouseFuncCallback(int button, int state, int x, int y)
 {
   if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
-    camera.setMousePosition(x, y);
+    glCamera.setMousePosition(x, y);
   }
 }
 
 void GlWindow::mouseMotionCallback(int x, int y)
 {
-  camera.mouseUpdate(glm::vec2(x, y));
+  glCamera.mouseUpdate(glm::vec2(x, y));
   renderCallback();
 }
 
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
-    case 'c': {
-      INT16 *depth = kinectCamera.getDepthDifferential();
-      INT16 *color = kinectCamera.getColorDifferential();
-      std::ofstream file("depth-differential.txt", std::ios::app);
-      for (int i = 0; i < DEPTH_SIZE; i++)
-        file << depth[i] << " ";
-      file.close();
+    //case 'c': {
+    //  INT16 *depth = kinectCamera.getDepthDifferential();
+    //  INT16 *color = kinectCamera.getColorDifferential();
+    //  std::ofstream file("depth-differential.txt", std::ios::app);
+    //  for (int i = 0; i < DEPTH_SIZE; i++)
+    //    file << depth[i] << " ";
+    //  file.close();
 
-      file.open("color-differential.txt", std::ios::app);
-      for (int i = 0; i < COLOR_SIZE; i++)
-        file << color[i] << " ";
-      file.close();
-      break;
-    }
+    //  file.open("color-differential.txt", std::ios::app);
+    //  for (int i = 0; i < COLOR_SIZE; i++)
+    //    file << color[i] << " ";
+    //  file.close();
+    //  break;
+    //}
     //////// temporary /////////
     //case 'q': {
     //  INT16 *depth = kinectCamera.getDepthDifferential();
@@ -321,51 +308,40 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     //  break;
     //}
     //////// temporary /////////
-    case ' ': {
-      camera.resetView();
+    case ' ':
+      glCamera.resetView();
       break;
-    }
-    case 'w': {
-      camera.moveCameraPosition(0, 0, 1);
+    case 'w':
+      glCamera.moveCameraPosition(0, 0, 1);
       break;
-    }
-    case 'a': {
-      camera.moveCameraPosition(1, 0, 0);
+    case 'a':
+      glCamera.moveCameraPosition(1, 0, 0);
       break;
-    }
-    case 's': {
-      camera.moveCameraPosition(0, 0, -1);
+    case 's':
+      glCamera.moveCameraPosition(0, 0, -1);
       break;
-    }
-    case 'd': {
-      camera.moveCameraPosition(-1, 0, 0);
+    case 'd':
+      glCamera.moveCameraPosition(-1, 0, 0);
       break;
-    }
-    case '1': {
+    case '1':
       compressionMode = 1;
       break;
-    }
-    case '2': {
+    case '2':
       compressionMode = 2;
       break;
-    }
-    case '3': {
+    case '3':
       compressionMode = 3;
       break;
-    }
-    case '4': {
+    case '4':
       compressionMode = 4;
       break;
-    }
-    case '5': {
+    case '5':
       compressionMode = 5;
       break;
-    }
-    case 'z': {
+    case 'm':
       stdToggle = !stdToggle;
       break;
-    }
-    case 27:
+    case 27: // ESC
       closeCallback();
       break;
   }

@@ -142,10 +142,6 @@ void KinectCamera::update()
   computeColorDifferential();
   computeCombinedFrame();
   computeCombinedDifferential();
-
-  //if (depthBuffer[100] != 0) {
-  //  std::cout << "DEBUG" << std::endl;
-  //}
 }
 
 RGBQUAD *KinectCamera::getColorBuffer()
