@@ -23,7 +23,7 @@ void ICP::computeTransformation()
   float meanSquareError = 1.f;
   float eps = 1e-6f;
 
-  while (meanSquareError > eps && iterations < 50) {
+  while (meanSquareError > eps && iterations < 10) {
     ++iterations;
     errorSum = 0.f;
     WLS<6> w;
