@@ -89,7 +89,7 @@
     <ClCompile Include="Core\Timer.cpp" />
     <ClCompile Include="Common\HuffmanCompressor.cpp" />
     <ClCompile Include="Common\StdHuffmanCompressor.cpp" />
-    <ClCompile Include="Test\icp.cpp" />
+    <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Common\Camera.h" />
