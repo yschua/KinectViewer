@@ -18,6 +18,7 @@
 #include <glm\gtc\matrix_transform.hpp>
 
 #define NOMINMAX
+#define limitDepth(depth) std::min(int(depth), int(MAX_DEPTH))
 
 class GlWindow {
 public:
@@ -25,7 +26,9 @@ public:
   ~GlWindow();
   void show(void);
 protected:
-  static void dataToDiff(const UINT16 *dataIn, INT16 *diffOut);
+  static void dataToDiff(const UINT16 *data, INT16 *diff);
+  static void dataToDiff(const BYTE *data, INT16 *diff);
+  static void dataToDiff(const UINT16 *depth, const BYTE *color, INT16 *diff);
   static void shaderRender();
   static void drawText(std::string text, float offset);
   static void renderCallback();
