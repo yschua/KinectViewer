@@ -168,6 +168,53 @@ void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
   diffToData(combineDiffReceive, depthReceive, colorReceive);
 }
 
+void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
+                            UINT16 *depthReceive, BYTE *colorReceive, bool stdMode)
+{
+  static INT16 *refFrameSend = new INT16[FRAME_SIZE];
+  static INT16 *refFrameReceive = new INT16[FRAME_SIZE];
+  static INT16 *frameDiffSend = new INT16[FRAME_SIZE];
+  static INT16 *frameDiffReceive = new INT16[FRAME_SIZE];
+  Bitset transmitData;
+
+  static bool init = true;
+  if (init) {
+    memset(refFrameSend, 0, sizeof(INT16) * FRAME_SIZE);
+    memset(refFrameReceive, 0, sizeof(INT16) * FRAME_SIZE);
+    init = false;
+  }
+
+  int k = 0;
+  for (int i = 0; i < DEPTH_SIZE; i++, k++) {
+    frameDiffSend[k] = depthSend[i] - refFrameSend[k];
+    refFrameSend[k] = depthSend[i];
+  }
+  for (int i = 0; i < COLOR_SIZE; i++, k++) {
+    frameDiffSend[k] = colorSend[i] - refFrameSend[k];
+    refFrameSend[k] = colorSend[i];
+  }
+
+  if (!stdMode) {
+    drawText("4. Huffman (difference frame)", 0.f);
+
+    huffman.compress(FRAME_SIZE, frameDiffSend, transmitData);
+    huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
+  }
+
+  float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
+  drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
+
+  k = 0;
+  for (int i = 0; i < DEPTH_SIZE; i++, k++) {
+    refFrameReceive[k] += frameDiffReceive[k];
+    depthReceive[i] = refFrameReceive[k];
+  }
+  for (int i = 0; i < COLOR_SIZE; i++, k++) {
+    refFrameReceive[k] += frameDiffReceive[k];
+    colorReceive[i] = refFrameReceive[k];
+  }
+}
+
 void GlWindow::drawText(std::string text, float offset)
 {
   glUseProgram(0);
@@ -193,11 +240,6 @@ void GlWindow::renderCallback()
   static UINT16 *depthReceive = new UINT16[DEPTH_SIZE];
   static BYTE *colorReceive = new BYTE[COLOR_SIZE];
 
-  // Frame diff
-  static INT16 currentFrameSender[FRAME_SIZE];
-  static INT16 currentFrameReceiver[FRAME_SIZE];
-  static INT16 differenceFrame[FRAME_SIZE];
-
   switch (compressionMode) {
     case 1:
       drawText("1. No compression", 0.0f);
@@ -211,6 +253,9 @@ void GlWindow::renderCallback()
       break;
     case 3:
       huffman2(depthSend, colorSend, depthReceive, colorReceive, stdMode);
+      break;
+    case 4:
+      frameDifference(depthSend, colorSend, depthReceive, colorReceive, stdMode);
       break;
     default:
       break;
@@ -258,8 +303,6 @@ void GlWindow::renderCallback()
     //  depthReceive[i] = currentFrameReceiver[i];
     //for (int i = 0; i < COLOR_SIZE; i++)
     //  colorReceive[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
-  
-  
 
   // Receiver computer renders received frame data
   model.updatePointCloud(depthReceive, colorReceive);
