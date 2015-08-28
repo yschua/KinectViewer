@@ -50,3 +50,4 @@ protected:
   static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
   static void closeCallback();
 };
+
