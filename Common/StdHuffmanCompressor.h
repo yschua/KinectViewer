@@ -28,8 +28,8 @@ class StdHuffmanCompressor : public HuffmanCompressor {
 public:
   StdHuffmanCompressor();
   ~StdHuffmanCompressor();
-  void compress(DataType dataType, Bitset &transmitData, const INT16 *data);
-  void decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut); // change dataOut to INT16
+  void compress(DataType dataType, const INT16 *data, Bitset &transmitData);
+  void decompress(DataType dataType, const Bitset &transmitData, INT16 *dataOut);
 private:
   void loadTable();
   void loadMapTable(DataType dataType, std::string name);

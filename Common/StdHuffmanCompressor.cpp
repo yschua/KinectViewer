@@ -11,8 +11,8 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //constructTable(DATA_COMBINED, combinedHistogram);
   //std::cout << "Finish combined table" << std::endl;
 
-  //loadTable();
-  //std::cout << "Table loaded." << std::endl;
+  loadTable();
+  std::cout << "Table loaded." << std::endl;
   std::cout << "No standard table loaded." << std::endl;
 }
 
@@ -21,7 +21,7 @@ StdHuffmanCompressor::~StdHuffmanCompressor()
   delete[] dataSize;
 }
 
-void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, const INT16 *data)
+void StdHuffmanCompressor::compress(DataType dataType, const INT16 *data, Bitset &transmitData)
 {
   timer.startTimer();
   std::string encodedData("");
@@ -33,7 +33,7 @@ void StdHuffmanCompressor::compress(DataType dataType, Bitset &transmitData, con
   //std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
 }
 
-void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, UINT16 *dataOut)
+void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, INT16 *dataOut)
 {
   timer.startTimer();
   for (int i = 0, transmitDataIndex = 0; i < dataSize[dataType]; i++) {

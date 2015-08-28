@@ -8,7 +8,7 @@ HuffmanCompressor::~HuffmanCompressor()
 {
 }
 
-Bitset HuffmanCompressor::compress(int size, const INT16 *data)
+void HuffmanCompressor::compress(int size, const INT16 *data, Bitset &transmitData)
 {
   // Find frequency of each value
   for (UINT i = 0; i < size; ++i)
@@ -53,14 +53,12 @@ Bitset HuffmanCompressor::compress(int size, const INT16 *data)
   minHeap.pop();
   dataFrequency.clear();
   huffmanCodes.clear();
-
-  return transmitData;
 }
 
-void HuffmanCompressor::decompress(int size, Bitset transmitData, INT16 *dataOut)
+void HuffmanCompressor::decompress(int size, const Bitset &transmitData, INT16 *dataOut)
 {
   transmitDataIndex = 0;
-
+  this->transmitData = transmitData;
   // Reconstruct Huffman tree
   Node *huffmanTree = NULL;
   reconstructHuffmanTree(huffmanTree);

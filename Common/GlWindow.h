@@ -29,8 +29,17 @@ protected:
   static void dataToDiff(const UINT16 *data, INT16 *diff);
   static void dataToDiff(const BYTE *data, INT16 *diff);
   static void dataToDiff(const UINT16 *depth, const BYTE *color, INT16 *diff);
+
+  static void diffToData(const INT16 *diff, UINT16 *data);
+  static void diffToData(const INT16 *diff, BYTE *data);
+  static void diffToData(const INT16 *diff, UINT16 *depth, BYTE *color);
+
+  static void huffman1(const UINT16 *depthSend, const BYTE *colorSend,
+                       UINT16 *depthReceive, BYTE *colorReceive, bool stdMode);
+
   static void shaderRender();
   static void drawText(std::string text, float offset);
+
   static void renderCallback();
   static void mouseFuncCallback(int button, int state, int x, int y);
   static void mouseMotionCallback(int x, int y);

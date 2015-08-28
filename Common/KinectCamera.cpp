@@ -20,13 +20,7 @@ KinectCamera::KinectCamera() :
 
   colorBuffer = new RGBQUAD[COLOR_SIZE];
   colorBufferReduced = new BYTE[DEPTH_SIZE * 3];
-  colorDifferential = new INT16[DEPTH_SIZE * 3];
-
   depthBuffer = new UINT16[DEPTH_SIZE];
-  depthDifferential = new INT16[DEPTH_SIZE];
-
-  combinedFrame = new INT16[DEPTH_SIZE * 4];
-  combinedDifferential = new INT16[DEPTH_SIZE * 4];
 
   //cameraSpacePoints = new CameraSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
   //colorSpacePoints = new ColorSpacePoint[DEPTH_WIDTH * DEPTH_HEIGHT];
@@ -42,25 +36,9 @@ KinectCamera::~KinectCamera()
     delete[] colorBufferReduced;
     colorBufferReduced = NULL;
   }
-  if (colorDifferential) {
-    delete[] colorDifferential;
-    colorDifferential = NULL;
-  }
   if (depthBuffer) {
     delete[] depthBuffer;
     depthBuffer = NULL;
-  }
-  if (depthDifferential) {
-    delete[] depthDifferential;
-    depthDifferential = NULL;
-  }
-  if (combinedFrame) {
-    delete[] combinedFrame;
-    combinedFrame = NULL;
-  }
-  if (combinedDifferential) {
-    delete[] combinedDifferential;
-    combinedDifferential = NULL;
   }
   SafeRelease(reader);
   SafeRelease(mapper);
@@ -137,8 +115,6 @@ void KinectCamera::update()
       }
     }
   }
-  computeCombinedFrame();
-  computeCombinedDifferential();
 }
 
 RGBQUAD *KinectCamera::getColorBuffer()
@@ -154,52 +130,6 @@ BYTE *KinectCamera::getColorBufferReduced()
 UINT16 *KinectCamera::getDepthBuffer()
 {
   return depthBuffer;
-}
-
-
-
-INT16 *KinectCamera::getCombinedFrame()
-{
-  return combinedFrame;
-}
-
-INT16 *KinectCamera::getCombinedDifferential()
-{
-  return combinedDifferential;
-}
-
-//CameraSpacePoint *KinectCamera::getCameraSpacePoints()
-//{
-//  return cameraSpacePoints;
-//}
-//
-//ColorSpacePoint *KinectCamera::getColorSpacePoints()
-//{
-//  return colorSpacePoints;
-//}
-
-
-
-void KinectCamera::computeCombinedFrame()
-{
-  for (int i = 0; i < DEPTH_SIZE; i++) {
-    combinedFrame[i] = depthBuffer[i];
-  }
-  for (int i = 0; i < DEPTH_SIZE * 3; i++) {
-    combinedFrame[i + DEPTH_SIZE] = colorBufferReduced[i];
-  }
-}
-
-void KinectCamera::computeCombinedDifferential()
-{
-  combinedDifferential[0] = colorBufferReduced[0];
-  for (int i = 1; i < DEPTH_SIZE * 3; i++) {
-    combinedDifferential[i] = colorBufferReduced[i] - colorBufferReduced[i - 1];
-  }
-  combinedDifferential[DEPTH_SIZE * 3] = min(depthBuffer[0], MAX_DEPTH) - colorBufferReduced[DEPTH_SIZE * 3 - 1];
-  for (int i = 1; i < DEPTH_SIZE; i++) {
-    combinedDifferential[DEPTH_SIZE * 3 + i] = (min(depthBuffer[i], MAX_DEPTH) - min(depthBuffer[i - 1], MAX_DEPTH));
-  }
 }
 
 void KinectCamera::checkError(HRESULT hr, char *name)
