@@ -36,6 +36,8 @@ protected:
 
   static void huffman1(const UINT16 *depthSend, const BYTE *colorSend,
                        UINT16 *depthReceive, BYTE *colorReceive, bool stdMode);
+  static void huffman2(const UINT16 *depthSend, const BYTE *colorSend,
+                       UINT16 *depthReceive, BYTE *colorReceive, bool stdMode);
 
   static void shaderRender();
   static void drawText(std::string text, float offset);

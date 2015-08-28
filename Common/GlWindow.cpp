@@ -1,6 +1,5 @@
 #include "GlWindow.h"
 
-// Class members
 GLuint program;
 Camera glCamera;
 KinectCamera kinectCamera;
@@ -103,6 +102,7 @@ void GlWindow::diffToData(const INT16 *diff, UINT16 *depth, BYTE *color)
     color[i] = diff[diffIdx++] + color[i - 1];
 }
 
+// Perform huffman compression seperately on depth and color
 void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
                         UINT16 *depthReceive, BYTE *colorReceive, bool stdMode)
 {
@@ -121,16 +121,16 @@ void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
     huffman.compress(DEPTH_SIZE, depthDiffSend, depthTransmit);
     huffman.compress(COLOR_SIZE, colorDiffSend, colorTransmit);
 
-    //huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
-    //huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
+    huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
+    huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
   } else {
     drawText("2b. Standard Huffman (2 trees)", 0.f);
     
     stdHuffman.compress(DATA_DEPTH, depthDiffSend, depthTransmit);
     stdHuffman.compress(DATA_COLOR, colorDiffSend, colorTransmit);
 
-    //stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
-    //stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
+    stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
+    stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)(depthTransmit.size() + colorTransmit.size());
@@ -138,6 +138,34 @@ void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
 
   diffToData(depthDiffReceive, depthReceive);
   diffToData(colorDiffReceive, colorReceive);
+}
+
+// Perform huffman compression on whole frame
+void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
+                        UINT16 *depthReceive, BYTE *colorReceive, bool stdMode)
+{
+  static INT16 *combineDiffSend = new INT16[FRAME_SIZE]; // deallocate
+  static INT16 *combineDiffReceive = new INT16[FRAME_SIZE];
+  Bitset transmitData;
+
+  dataToDiff(depthSend, colorSend, combineDiffSend);
+
+  if (!stdMode) {
+    drawText("3a. Huffman (1 tree)", 0.f);
+
+    huffman.compress(FRAME_SIZE, combineDiffSend, transmitData);
+    huffman.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
+  } else {
+    drawText("3b. Standard Huffman (1 tree)", 0.f);
+
+    stdHuffman.compress(DATA_COMBINED, combineDiffSend, transmitData);
+    stdHuffman.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
+  }
+
+  float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
+  drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
+
+  diffToData(combineDiffReceive, depthReceive, colorReceive);
 }
 
 void GlWindow::drawText(std::string text, float offset)
@@ -160,67 +188,34 @@ void GlWindow::renderCallback()
   kinectCamera.update();
 
   // Data processing and simulated transmission
-  // Send buffer
   UINT16 *depthSend = kinectCamera.getDepthBuffer();
   BYTE *colorSend = kinectCamera.getColorBufferReduced();
-
- 
-  static INT16 *combineDiffSend = new INT16[FRAME_SIZE]; // deallocate
-
-  // Receive buffer
   static UINT16 *depthReceive = new UINT16[DEPTH_SIZE];
   static BYTE *colorReceive = new BYTE[COLOR_SIZE];
-
-
-  static INT16 *combineDiffReceive = new INT16[FRAME_SIZE];
 
   // Frame diff
   static INT16 currentFrameSender[FRAME_SIZE];
   static INT16 currentFrameReceiver[FRAME_SIZE];
   static INT16 differenceFrame[FRAME_SIZE];
 
-  // Send processing
-  dataToDiff(depthSend, colorSend, combineDiffSend);
-
+  switch (compressionMode) {
+    case 1:
+      drawText("1. No compression", 0.0f);
+      for (int i = 0; i < DEPTH_SIZE; i++)
+        depthReceive[i] = depthSend[i];
+      for (int i = 0; i < COLOR_SIZE; i++)
+        colorReceive[i] = colorSend[i];
+      break;
+    case 2:
+      huffman1(depthSend, colorSend, depthReceive, colorReceive, stdMode);
+      break;
+    case 3:
+      huffman2(depthSend, colorSend, depthReceive, colorReceive, stdMode);
+      break;
+    default:
+      break;
+  }
   
-  
-  if (compressionMode == 1) {
-    /******************** NO COMPRESSION **************************/
-    drawText("1. No compression", 0.0f);
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depthReceive[i] = depthSend[i];
-    for (int i = 0; i < COLOR_SIZE; i++)
-      colorReceive[i] = colorSend[i];
-
-  } else if (compressionMode == 2) {
-    /******************** HUFFMAN DIFFERENTIAL 1 **************************/
-    huffman1(depthSend, colorSend, depthReceive, colorReceive, stdMode);
-
-  } else if (compressionMode == 3) {
-    /******************** HUFFMAN DIFFERENTIAL 2 **************************/
-    //drawText("3. Huffman (1 tree for both images)", 0.0f);
-
-    //Bitset transmitData;
-    //if (stdMode) {
-    //  drawText("                                                                  [STANDARDISED]", 0.0f);
-    //  stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, combineDiffSend);
-    //  stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
-    //} else {
-    //  // Compress both images
-    //  huffmanCompressor.compress(FRAME_SIZE, combineDiffSend, transmitData);
-
-    //  // Decompress data
-    //  huffmanCompressor.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
-    //}
-
-    //// Print result
-    //float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
-    //drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    //// Reconstruct values
-    //diffToData(combineDiffReceive, depthReceive, colorReceive);
-    
-  } else if (compressionMode == 4) {
     /******************** HUFFMAN FRAME DIFFERENTIAL  **************************/
     //drawText("4. Huffman (difference between frames)", 0.0f);
 
@@ -264,7 +259,7 @@ void GlWindow::renderCallback()
     //for (int i = 0; i < COLOR_SIZE; i++)
     //  colorReceive[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
   
-  }
+  
 
   // Receiver computer renders received frame data
   model.updatePointCloud(depthReceive, colorReceive);
