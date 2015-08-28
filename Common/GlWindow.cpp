@@ -186,8 +186,8 @@ void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
 
   int k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
-    frameDiffSend[k] = depthSend[i] - refFrameSend[k];
-    refFrameSend[k] = depthSend[i];
+    frameDiffSend[k] = limitDepth(depthSend[i]) - refFrameSend[k];
+    refFrameSend[k] = limitDepth(depthSend[i]);
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
     frameDiffSend[k] = colorSend[i] - refFrameSend[k];
@@ -195,10 +195,15 @@ void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
   }
 
   if (!stdMode) {
-    drawText("4. Huffman (difference frame)", 0.f);
+    drawText("4a. Huffman (difference frame)", 0.f);
 
     huffman.compress(FRAME_SIZE, frameDiffSend, transmitData);
     huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
+  } else {
+    drawText("4b. Standard Huffman (difference frame)", 0.f);
+
+    stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
+    stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -241,13 +246,14 @@ void GlWindow::renderCallback()
   static BYTE *colorReceive = new BYTE[COLOR_SIZE];
 
   switch (compressionMode) {
-    case 1:
+    case 1: {
       drawText("1. No compression", 0.0f);
       for (int i = 0; i < DEPTH_SIZE; i++)
         depthReceive[i] = depthSend[i];
       for (int i = 0; i < COLOR_SIZE; i++)
         colorReceive[i] = colorSend[i];
       break;
+    }
     case 2:
       huffman1(depthSend, colorSend, depthReceive, colorReceive, stdMode);
       break;
@@ -257,52 +263,8 @@ void GlWindow::renderCallback()
     case 4:
       frameDifference(depthSend, colorSend, depthReceive, colorReceive, stdMode);
       break;
-    default:
-      break;
+    default: break;
   }
-  
-    /******************** HUFFMAN FRAME DIFFERENTIAL  **************************/
-    //drawText("4. Huffman (difference between frames)", 0.0f);
-
-    //// Initialize reference frame
-    //static bool once = true;
-    //if (once) {
-    //  memset(currentFrameSender, 0, sizeof(INT16) * FRAME_SIZE);
-    //  memset(currentFrameReceiver, 0, sizeof(INT16) * FRAME_SIZE);
-    //  once = false;
-    //}
-
-    //// Compute frame difference
-    //INT16 *nextFrame;
-    //for (int i = 0; i < FRAME_SIZE; i++) {
-    //  differenceFrame[i] = nextFrame[i] - currentFrameSender[i];
-    //  currentFrameSender[i] = nextFrame[i];
-    //}
-    //
-    //Bitset transmitData;
-    //if (stdMode) {
-    //  drawText("                                                                  [STANDARDISED]", 0.0f);
-    //  stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, differenceFrame);
-    //  stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, dataReceived);
-    //} else {
-    //  // Compress
-    //  transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
-
-    //  // Decompress
-    //  huffmanCompressor.decompress(FRAME_SIZE, transmitData, frameReceive);
-    //}
-
-    //// Results
-    //float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
-    //drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    //// Reconstruct values
-    //for (int i = 0; i < FRAME_SIZE; i++)
-    //  currentFrameReceiver[i] += dataReceived[i];
-    //for (int i = 0; i < DEPTH_SIZE; i++)
-    //  depthReceive[i] = currentFrameReceiver[i];
-    //for (int i = 0; i < COLOR_SIZE; i++)
-    //  colorReceive[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
 
   // Receiver computer renders received frame data
   model.updatePointCloud(depthReceive, colorReceive);
