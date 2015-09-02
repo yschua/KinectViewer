@@ -58,6 +58,28 @@ GlWindow::GlWindow(int argc, char *argv[])
   }
   ////////////////////////////////////////////////////////////////////////
 
+
+  //////////////////////////////////////////////////////
+  // Depth test //
+  std::ifstream file;
+  file.open("depth-test-xyz.txt", std::ios::in);
+  std::ofstream outfile("output.txt");
+  std::vector<glm::vec3> ptCld;
+  
+  for (int y = 0; y < DEPTH_HEIGHT; y++) {
+    for (int x = 0; x < DEPTH_WIDTH; x++) {
+      float wx, wy, wz;
+      file >> wx >> wy >> wz;
+      glm::vec3 world = glm::vec3(wx, wy, wz);
+
+      CameraParameters cameraParams;
+      glm::vec3 image = world * cameraParams.depthIntrinsic;
+      outfile << ((wz == 0) ?  0 : (int)(image.x / x * 1000 + 0.5)) << std::endl;
+
+    }
+  }
+  file.close();
+  outfile.close();
 }
 
 GlWindow::~GlWindow()
@@ -95,188 +117,8 @@ void GlWindow::renderCallback()
   // Sender computer obtains frame data
   kinectCamera.update();
 
-  // Data processing and simulated transmission
-  static UINT16 depth[DEPTH_SIZE];
-  static UINT16 colorInt[COLOR_SIZE];
-  static BYTE color[COLOR_SIZE];
-  static UINT16 dataReceived[FRAME_SIZE];
-  static INT16 currentFrameSender[FRAME_SIZE];
-  static INT16 currentFrameReceiver[FRAME_SIZE];
-  static INT16 differenceFrame[FRAME_SIZE];
-  UINT16 *depthBuffer = kinectCamera.getDepthBuffer();
-  BYTE *colorBuffer = kinectCamera.getColorBufferReduced();
-  INT16 *depthDifferential = kinectCamera.getDepthDifferential();
-  INT16 *colorDifferential = kinectCamera.getColorDifferential();
-  INT16 *combinedDifferential = kinectCamera.getCombinedDifferential();
-  const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
-  
-  if (compressionMode == 1) {
-    /******************** NO COMPRESSION **************************/
-    drawText("1. No compression", 0.0f);
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = depthBuffer[i];
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = colorBuffer[i];
-
-  } else if (compressionMode == 2) {
-    /******************** HUFFMAN DIFFERENTIAL 1 **************************/
-    drawText("2. Huffman (2 trees for each image)", 0.0f);
-
-    int depthTransmitSize, colorTransmitSize;
-    if (stdToggle) {
-      drawText("                                                                  [STANDARDISED]", 0.0f);
-      Bitset transmitData;
-      stdHuffmanCompressor.compress(DATA_DEPTH, transmitData, depthDifferential);
-      depthTransmitSize = transmitData.size();
-      stdHuffmanCompressor.decompress(DATA_DEPTH, transmitData, depth);
-
-      stdHuffmanCompressor.compress(DATA_COLOR, transmitData, colorDifferential);
-      colorTransmitSize = transmitData.size();
-      stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, colorInt);
-    } else {
-      // Depth image
-      Bitset transmitData = huffmanCompressor.compress(DEPTH_SIZE, depthDifferential);
-      depthTransmitSize = transmitData.size();
-      huffmanCompressor.decompress(DEPTH_SIZE, transmitData, depth);
-
-      // Color image
-      transmitData = huffmanCompressor.compress(COLOR_SIZE, colorDifferential);
-      colorTransmitSize = transmitData.size();
-      huffmanCompressor.decompress(COLOR_SIZE, transmitData, colorInt);
-    }
-
-    // Display result
-    float compression_ratio = UNCOMPRESSED_SIZE / (float)(depthTransmitSize + colorTransmitSize);
-    drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Reconstruct values
-    for (int i = 1; i < DEPTH_SIZE; i++)
-      depth[i] = depth[i] + depth[i - 1];
-    for (int i = 1; i < COLOR_SIZE; i++)
-      colorInt[i] = colorInt[i] + colorInt[i - 1];
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = (BYTE)colorInt[i];
-
-  } else if (compressionMode == 3) {
-    /******************** HUFFMAN DIFFERENTIAL 2 **************************/
-    drawText("3. Huffman (1 tree for both images)", 0.0f);
-
-    Bitset transmitData;
-    if (stdToggle) {
-      drawText("                                                                  [STANDARDISED]", 0.0f);
-      stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, combinedDifferential);
-      stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, dataReceived);
-    } else {
-      // Compress both images
-       transmitData = huffmanCompressor.compress(FRAME_SIZE, combinedDifferential);
-
-      // Decompress data
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
-    }
-
-    // Print result
-    float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
-    drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Reconstruct values
-    for (int i = 1; i < FRAME_SIZE; i++)
-      dataReceived[i] = dataReceived[i] + dataReceived[i - 1];
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = (BYTE)dataReceived[i];
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = dataReceived[i + COLOR_SIZE];
-
-  } else if (compressionMode == 4) {
-    /******************** HUFFMAN FRAME DIFFERENTIAL  **************************/
-    drawText("4. Huffman (difference between frames)", 0.0f);
-
-    // Initialize reference frame
-    static bool once = true;
-    if (once) {
-      memset(currentFrameSender, 0, sizeof(INT16) * FRAME_SIZE);
-      memset(currentFrameReceiver, 0, sizeof(INT16) * FRAME_SIZE);
-      once = false;
-    }
-
-    // Compute frame difference
-    INT16 *nextFrame = kinectCamera.getCombinedFrame();
-    for (int i = 0; i < FRAME_SIZE; i++) {
-      differenceFrame[i] = nextFrame[i] - currentFrameSender[i];
-      currentFrameSender[i] = nextFrame[i];
-    }
-    
-    Bitset transmitData;
-    if (stdToggle) {
-      drawText("                                                                  [STANDARDISED]", 0.0f);
-      stdHuffmanCompressor.compress(DATA_COMBINED, transmitData, differenceFrame);
-      stdHuffmanCompressor.decompress(DATA_COMBINED, transmitData, dataReceived);
-    } else {
-      // Compress
-      transmitData = huffmanCompressor.compress(FRAME_SIZE, differenceFrame);
-
-      // Decompress
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
-    }
-
-    // Results
-    float compression_ratio = UNCOMPRESSED_SIZE / (float)transmitData.size();
-    drawText("Compress ratio: " + std::to_string(compression_ratio), 0.1f);
-
-    // Reconstruct values
-    for (int i = 0; i < FRAME_SIZE; i++)
-      currentFrameReceiver[i] += dataReceived[i];
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = currentFrameReceiver[i];
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = (BYTE)currentFrameReceiver[i + DEPTH_SIZE];
-  
-  } else if (compressionMode == 5) {
-    /**************** HUFFMAN FRAME DIFFERENTIAL (COLOR ONLY)  *********************/
-    drawText("5. Huffman (difference between frames, color only)", 0.0f);
-
-    // Initialize reference frame
-    static bool once = true;
-    if (once) {
-      memset(currentFrameSender, 0, sizeof(INT16) * COLOR_SIZE);
-      memset(currentFrameReceiver, 0, sizeof(INT16) * COLOR_SIZE);
-      once = false;
-    }
-
-    // Compute frame difference
-    for (int i = 0; i < COLOR_SIZE; i++) {
-      differenceFrame[i] = colorBuffer[i] - currentFrameSender[i];
-      currentFrameSender[i] = colorBuffer[i];
-    }
-
-
-    Bitset transmitData;
-    if (stdToggle) {
-      drawText("                                                                                    [STANDARDISED]", 0.0f);
-      stdHuffmanCompressor.compress(DATA_COLOR, transmitData, differenceFrame);
-      stdHuffmanCompressor.decompress(DATA_COLOR, transmitData, dataReceived);
-    } else {
-      // Compress
-      transmitData = huffmanCompressor.compress(COLOR_SIZE, differenceFrame);
-
-      // Decompress
-      huffmanCompressor.decompress(FRAME_SIZE, transmitData, dataReceived);
-    }
-
-    // Results
-    float compression_ratio = COLOR_SIZE * 8 / (float)transmitData.size();
-    drawText("Compress ratio (color only): " + std::to_string(compression_ratio), 0.1f);
-
-    // Reconstruct
-    for (int i = 0; i < COLOR_SIZE; i++)
-      currentFrameReceiver[i] += dataReceived[i];
-    for (int i = 0; i < DEPTH_SIZE; i++)
-      depth[i] = 10;
-    for (int i = 0; i < COLOR_SIZE; i++)
-      color[i] = currentFrameReceiver[i];
-  }
-
-  // Receiver computer renders received frame data
-  model.updatePointCloud(depth, color);
+  UINT16 *depth = kinectCamera.getDepthBuffer();
+  BYTE *color = kinectCamera.getColorBufferReduced();
 
   ////////////////////////////////////////////////////////////////////////
   // ICP point cloud rendering
@@ -297,6 +139,8 @@ void GlWindow::renderCallback()
     model.updatePointCloud(estimatePtCloud);
   ////////////////////////////////////////////////////////////////////////
 
+
+  model.updatePointCloud(depth, color);
   shaderRender();
 
   timer.stopTimer();
@@ -338,14 +182,24 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
     case 'c': {
-      std::ofstream file("point-cloud" + std::to_string(fileCount++) + ".txt");
+      std::ofstream file("depth-test.txt");
+      UINT16 *depth = kinectCamera.getDepthBuffer();
+      for (int i = 0; i < DEPTH_SIZE; i++) {
+        file << depth[i] << std::endl;
+      }
+      file.close();
+
+      //std::ofstream file("point-cloud" + std::to_string(fileCount++) + ".txt");
+      file.open("depth-test-xyz.txt");
       PointCloud pointCloud = model.getPointCloud();
       for (int i = 0; i < pointCloud.numVertices; i++) {
         file << pointCloud.vertices[i].position.x << ' ' <<
-          pointCloud.vertices[i].position.y << ' ' <<
-          pointCloud.vertices[i].position.z << std::endl;
+        pointCloud.vertices[i].position.y << ' ' <<
+        pointCloud.vertices[i].position.z << std::endl;
       }
       file.close();
+
+
       //INT16 *depth = kinectCamera.getDepthDifferential();
       //INT16 *color = kinectCamera.getColorDifferential();
       //std::ofstream file("depth-differential.txt", std::ios::app);
@@ -460,7 +314,8 @@ void GlWindow::loadPointCloud()
   for (int i = 0; file >> x >> y >> z; i++) {
     int row = i % DEPTH_WIDTH;
     int col = (i - row) / DEPTH_WIDTH;
-    if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+    //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+    if (i % 200 == 0)
       currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
     else
       currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
@@ -470,7 +325,8 @@ void GlWindow::loadPointCloud()
   for (int i = 0; file >> x >> y >> z; i++) {
     int row = i % DEPTH_WIDTH;
     int col = (i - row) / DEPTH_WIDTH;
-    if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+    //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+    if (i % 200 == 0)
       nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
     else
       nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };

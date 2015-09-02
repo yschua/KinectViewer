@@ -81,10 +81,12 @@ Points ICP::loadPoints(std::string filename)
   //  //}
   //}
 
+  int idx = 0;
   for (int row = 0; row < DEPTH_HEIGHT; row++) {
     for (int col = 0; col < DEPTH_WIDTH; col++) {
       file >> x >> y >> z;
-      if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_ROW_END)
+      //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_ROW_END)
+      if (idx++ % 200 == 0)
         points.push_back(makeVector(x, y, z, 1.f));
     }
   }
