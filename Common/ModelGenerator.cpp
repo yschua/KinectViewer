@@ -32,7 +32,7 @@ void ModelGenerator::updatePointCloud(PointCloud pointCloud)
 }
 
 // World coordinates have to be recalculated, color data is used as received
-void ModelGenerator::updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer)
+void ModelGenerator::updatePointCloud(const UINT16 *depthBuffer, const BYTE *colorBuffer)
 {
   int pointCloudIndex = 0;
   for (int y = 0; y < HEIGHT; ++y) {

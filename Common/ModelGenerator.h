@@ -20,6 +20,6 @@ public:
   int getNumVertices();
   PointCloud &getPointCloud();
   void updatePointCloud(PointCloud pointCloud);
-  void updatePointCloud(UINT16 *depthBuffer, BYTE *colorBuffer);
+  void updatePointCloud(const UINT16 *depthBuffer, const BYTE *colorBuffer);
   void loadModel();
 };

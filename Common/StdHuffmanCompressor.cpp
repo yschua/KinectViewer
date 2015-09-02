@@ -12,8 +12,7 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //std::cout << "Finish combined table" << std::endl;
 
   loadTable();
-  std::cout << "Table loaded." << std::endl;
-  std::cout << "No standard table loaded." << std::endl;
+  std::cout << "Huffman table loaded." << std::endl;
 }
 
 StdHuffmanCompressor::~StdHuffmanCompressor()

@@ -8,9 +8,10 @@ StdHuffmanCompressor stdHuffman;
 ModelGenerator model(DEPTH_WIDTH, DEPTH_HEIGHT);
 Core::Timer timer;
 ICP icp;
+CameraParameters cameraParams;
 
 int compressionMode = 1;
-bool stdMode = false;
+bool stdMode = true;
 const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -22,7 +23,7 @@ GlWindow::GlWindow(int argc, char *argv[])
   glewInit();
   glEnable(GL_DEPTH_TEST);
   glEnable(GL_POINT_SMOOTH);
-  //glPointSize(1.f);
+  // glPointSize(1.f);
   
   model.loadModel();
 
@@ -169,7 +170,7 @@ void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
   diffToData(combineDiffReceive, depthReceive, colorReceive);
 }
 
-void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
+void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
                             UINT16 *depthReceive, BYTE *colorReceive, bool stdMode)
 {
   static INT16 *refFrameSend = new INT16[FRAME_SIZE];
@@ -203,8 +204,8 @@ void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
   } else {
     drawText("4b. Standard Huffman (difference frame)", 0.f);
 
-    stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-    stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+    stdHuffman.compress(DATA_DEPTH, frameDiffSend, transmitData);
+    stdHuffman.decompress(DATA_DEPTH, transmitData, frameDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -217,8 +218,101 @@ void GlWindow::frameDifference(const UINT16 *depthSend, const BYTE *colorSend,
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
     refFrameReceive[k] += frameDiffReceive[k];
-    colorReceive[i] = refFrameReceive[k];
+    colorReceive[i] = 255;//refFrameReceive[k];
   }
+}
+
+void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
+                         UINT16 *depthReceive, BYTE *colorReceive)
+{
+  drawText("5. Difference Frame (ICP + Standard Huffman)", 0.f);
+  for (int i = 0; i < COLOR_SIZE; i++)
+    colorReceive[i] = 255;
+
+  static UINT16 *currentDepth = new UINT16[DEPTH_SIZE]; 
+  static UINT16 *depthEstimate = new UINT16[DEPTH_SIZE];
+  const UINT16 *nextDepth = depthSend;
+  static PointCloud estimatePtCloud;
+
+  static INT16 *refFrameSend = new INT16[FRAME_SIZE];
+  static INT16 *refFrameReceive = new INT16[FRAME_SIZE];
+  static INT16 *frameDiffSend = new INT16[FRAME_SIZE];
+  static INT16 *frameDiffReceive = new INT16[FRAME_SIZE];
+
+  static bool init = true;
+  if (init) {
+    memset(currentDepth, 0, sizeof(UINT16) * DEPTH_SIZE);
+    memset(refFrameSend, 0, sizeof(INT16) * FRAME_SIZE);
+    memset(refFrameReceive, 0, sizeof(INT16) * FRAME_SIZE);
+    init = false;
+
+    estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+  }
+
+  // Convert to world coordinates
+  model.updatePointCloud(nextDepth, colorReceive);
+  icp.loadPointsY(model.getPointCloud());
+  model.updatePointCloud(currentDepth, colorReceive);
+  icp.loadPointsX(model.getPointCloud());
+
+  icp.computeTransformation();
+  SE3<> transform = icp.getTransformation();
+  //std::cout << transformation << std::endl;
+  //icp.getDepthEstimate(depthEstimate);
+
+  //
+  for (int i = 0; i < model.getPointCloud().numVertices; i++) {
+    float wx = model.getPointCloud().vertices[i].position.x;
+    float wy = model.getPointCloud().vertices[i].position.y;
+    float wz = model.getPointCloud().vertices[i].position.z;
+
+    Vector<4> p = makeVector(wx, wy, wz, 1);
+    p = transform * p; 
+    wx = p[0];
+    wy = p[1];
+    wz = p[2];
+
+    estimatePtCloud.vertices[i] = { glm::vec3(wx, wy, wz), glm::vec3(1.f, 1.f, 1.f) };
+  }
+
+  int i = 0;
+  for (int iy = 0; iy < DEPTH_HEIGHT; iy++) {
+    for (int ix = 0; ix < DEPTH_WIDTH; ix++) {
+      float wx = estimatePtCloud.vertices[i].position.x;
+      float wy = estimatePtCloud.vertices[i].position.y;
+      float wz = estimatePtCloud.vertices[i].position.z;
+
+      glm::vec3 world = glm::vec3(wx, wy, wz);
+      glm::vec3 image = world * cameraParams.depthIntrinsic;
+
+      depthEstimate[DEPTH_SIZE - 1 - i] = (int)(image.x / ix * 1000 + 0.5f);
+      if (depthEstimate[DEPTH_SIZE - 1 - i] < 0) {
+        depthEstimate[DEPTH_SIZE - 1 - i] = 0;
+      } else if (depthEstimate[DEPTH_SIZE - 1 - i] > 4500) {
+        depthEstimate[DEPTH_SIZE - 1 - i] = 4500;
+      }
+      i++;
+    }
+  }
+
+
+  for (int i = 0; i < DEPTH_SIZE; i++) {
+    frameDiffSend[i] = limitDepth(nextDepth[i]) - depthEstimate[i];
+  }
+
+  Bitset transmitData;
+  stdHuffman.compress(DATA_DEPTH, frameDiffSend, transmitData);
+
+  float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
+  drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
+
+//  std::cout << std::endl;
+  
+  for (int i = 0; i < DEPTH_SIZE; i++) {
+    currentDepth[i] = nextDepth[i];
+    depthReceive[i] = depthEstimate[i];
+  }
+  icp.clear();
 }
 
 void GlWindow::drawText(std::string text, float offset)
@@ -262,7 +356,10 @@ void GlWindow::renderCallback()
       huffman2(depthSend, colorSend, depthReceive, colorReceive, stdMode);
       break;
     case 4:
-      frameDifference(depthSend, colorSend, depthReceive, colorReceive, stdMode);
+      frameDiff(depthSend, colorSend, depthReceive, colorReceive, stdMode);
+      break;
+    case 5:
+      frameDiffICP(depthSend, colorSend, depthReceive, colorReceive);
       break;
     default: break;
   }
@@ -391,19 +488,11 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       glCamera.moveCameraPosition(0, -1, 0);
       break;
     case '1':
-      compressionMode = 1;
-      break;
     case '2':
-      compressionMode = 2;
-      break;
     case '3':
-      compressionMode = 3;
-      break;
     case '4':
-      compressionMode = 4;
-      break;
     case '5':
-      compressionMode = 5;
+      compressionMode = key - '0';
       break;
     case 'm':
       stdMode = !stdMode;
