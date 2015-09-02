@@ -7,12 +7,13 @@ HuffmanCompressor huffman;
 StdHuffmanCompressor stdHuffman;
 ModelGenerator model(DEPTH_WIDTH, DEPTH_HEIGHT);
 Core::Timer timer;
+ICP icp;
 
 int compressionMode = 1;
 bool stdMode = false;
 const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
 
-GlWindow::GlWindow(int argc, char **argv)
+GlWindow::GlWindow(int argc, char *argv[])
 {
   glutInit(&argc, argv);
   glutInitWindowSize(800, 600);
@@ -303,33 +304,60 @@ void GlWindow::mouseMotionCallback(int x, int y)
   renderCallback();
 }
 
+int fileCount = 1;
+
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
-    //case 'c': {
+    case 'c': {
     //  INT16 *depth = kinectCamera.getDepthDifferential();
     //  INT16 *color = kinectCamera.getColorDifferential();
     //  std::ofstream file("depth-differential.txt", std::ios::app);
     //  for (int i = 0; i < DEPTH_SIZE; i++)
     //    file << depth[i] << " ";
     //  file.close();
-
     //  file.open("color-differential.txt", std::ios::app);
     //  for (int i = 0; i < COLOR_SIZE; i++)
     //    file << color[i] << " ";
     //  file.close();
     //  break;
     //}
+    //case 'c': {
+    //  std::ofstream file("depth-test.txt");
+    //  UINT16 *depth = kinectCamera.getDepthBuffer();
+    //  for (int i = 0; i < DEPTH_SIZE; i++) {
+    //    file << depth[i] << std::endl;
+    //  }
+    //  file.close();
+    //  //std::ofstream file("point-cloud" + std::to_string(fileCount++) + ".txt");
+    //  file.open("depth-test-xyz.txt");
+    //  PointCloud pointCloud = model.getPointCloud();
+    //  for (int i = 0; i < pointCloud.numVertices; i++) {
+    //    file << pointCloud.vertices[i].position.x << ' ' <<
+    //    pointCloud.vertices[i].position.y << ' ' <<
+    //    pointCloud.vertices[i].position.z << std::endl;
+    //  }
+    //  file.close();
+    //INT16 *depth = kinectCamera.getDepthDifferential();
+    //INT16 *color = kinectCamera.getColorDifferential();
+    //std::ofstream file("depth-differential.txt", std::ios::app);
+    //for (int i = 0; i < DEPTH_SIZE; i++)
+    //  file << depth[i] << " ";
+    //file.close();
+    //file.open("color-differential.txt", std::ios::app);
+    //for (int i = 0; i < COLOR_SIZE; i++)
+    //  file << color[i] << " ";
+    //file.close();
+      break;
+    }
     //////// temporary /////////
     //case 'q': {
     //  INT16 *depth = kinectCamera.getDepthDifferential();
     //  INT16 *colorReceive = kinectCamera.getColorDifferential();
     //  INT16 *combined = kinectCamera.getCombinedDifferential();
     //  INT16 *dataReceived = new INT16[FRAME_SIZE];
-
     //  Bitset data = stdHuffmanCompressor.compress(DATA_DEPTH, depth);
     //  stdHuffmanCompressor.decompress(DATA_DEPTH, data, dataReceived);
-
     //  std::ofstream file("debug-output.txt");
     //  for (int i = 0; i < 500; i++)
     //    file << depth[i] << " ";
@@ -337,7 +365,6 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     //  for (int i = 0; i < 500; i++)
     //    file << dataReceived[i] << " ";
     //  file.close();
-
     //  delete[] dataReceived;
     //  break;
     //}
@@ -356,6 +383,12 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       break;
     case 'd':
       glCamera.moveCameraPosition(-1, 0, 0);
+      break;
+    case 'z':
+      glCamera.moveCameraPosition(0, 1, 0);
+      break;
+    case 'x':
+      glCamera.moveCameraPosition(0, -1, 0);
       break;
     case '1':
       compressionMode = 1;
@@ -386,3 +419,36 @@ void GlWindow::closeCallback()
   std::cout << "GLUT: Finished" << std::endl;
   glutLeaveMainLoop();
 }
+
+//void GlWindow::loadPointCloud()
+//{
+//  currentPtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+//  nextPtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+//  estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+//
+//  std::ifstream file;
+//  file.open("point-cloud1.txt", std::ios::in);
+//  float x, y, z;
+//  for (int i = 0; file >> x >> y >> z; i++) {
+//    int row = i % DEPTH_WIDTH;
+//    int col = (i - row) / DEPTH_WIDTH;
+//    //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+//    if (i % 200 == 0)
+//      currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
+//    else
+//      currentPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
+//  }
+//  file.close();
+//  file.open("point-cloud2.txt", std::ios::in);
+//  for (int i = 0; file >> x >> y >> z; i++) {
+//    int row = i % DEPTH_WIDTH;
+//    int col = (i - row) / DEPTH_WIDTH;
+//    //if (row >= ICP_ROW_START && row <= ICP_ROW_END && col >= ICP_COL_START && col <= ICP_COL_END)
+//    if (i % 200 == 0)
+//      nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 0.f, 0.f) };
+//    else
+//      nextPtCloud.vertices[i] = { glm::vec3(x, y, z), glm::vec3(1.f, 1.f, 1.f) };
+//  }
+//  file.close();
+//  std::cout << "Point clouds loaded" << std::endl;
+//}

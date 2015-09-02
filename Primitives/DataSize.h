@@ -12,4 +12,8 @@ enum DataSize {
   FRAME_SIZE = COMBINED_SIZE,
 
   MAX_DEPTH = 4500, // mm
+  ICP_ROW_START = 100,
+  ICP_ROW_END = 200,
+  ICP_COL_START = 100,
+  ICP_COL_END = 200,
 };

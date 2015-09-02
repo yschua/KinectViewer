@@ -16,9 +16,19 @@ int ModelGenerator::getNumVertices()
   return pointCloud.numVertices;
 }
 
-PointCloud ModelGenerator::getModel()
+PointCloud &ModelGenerator::getPointCloud()
 {
   return pointCloud;
+}
+
+// Directly passes world coordinates
+void ModelGenerator::updatePointCloud(PointCloud pointCloud)
+{
+  for (int i = 0; i < pointCloud.vertices.size(); i++) {
+    this->pointCloud.vertices[i] = pointCloud.vertices[i];
+  }
+  this->pointCloud.numVertices = pointCloud.vertices.size();
+  glBufferData(GL_ARRAY_BUFFER, this->pointCloud.bufferSize(), &this->pointCloud.vertices[0], GL_DYNAMIC_DRAW);
 }
 
 // World coordinates have to be recalculated, color data is used as received
