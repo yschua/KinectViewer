@@ -15,6 +15,7 @@ typedef std::vector<Vector<4> > Points;
 
 class ICP {
   int iterations;
+  float meanSquareError;
   Points x;
   Points y;
   Points xp;
@@ -28,7 +29,8 @@ public:
   void loadPointsY(PointCloud &pointCloud);
   void computeTransformation();
   SE3<> getTransformation();
-  void getDepthEstimate(UINT16 *depthEstimate);
+  int getIterations();
+  float getError();
 protected:
   Points loadPoints(std::string filename);
   double computeDistance2(Vector<4> p, Vector<4> q);

@@ -52,8 +52,9 @@ void ICP::computeTransformation()
 {
   iterations = 0;
   float errorSum = 0.f;
-  float meanSquareError = 1.f;
-  float eps = 1e-6f;
+  meanSquareError = 1.f;
+  float eps = 0.0001f;
+  transformation = SE3<>();
 
   while (meanSquareError > eps && iterations < 5) {
     ++iterations;
@@ -90,7 +91,6 @@ void ICP::computeTransformation()
     }
     //std::cout << "MSE: " << meanSquareError << std::endl;
   }
-
   //std::cout << "Iterations: " << iterations << std::endl;
   //std::cout << "Transformation: " << std::endl;
   //std::cout << transformation << std::endl;
@@ -101,23 +101,14 @@ SE3<> ICP::getTransformation()
   return transformation;
 }
 
-void ICP::getDepthEstimate(UINT16 *depthEstimate)
+int ICP::getIterations()
 {
-  int i = 0;
-  for (int iy = 0; iy < DEPTH_HEIGHT; iy++) {
-    for (int ix = 0; ix < DEPTH_WIDTH; ix++) {
-      float wx = x[i][0];
-      float wy = x[i][1];
-      float wz = x[i][2];
+  return iterations;
+}
 
-      glm::vec3 world = glm::vec3(wx, wy, wz);
-      glm::vec3 image = world * cameraParams.depthIntrinsic;
-
-      depthEstimate[i] = (wz == 0) ? 0 : (int)(image.x / ix * 1000 + 0.5f);
-      i++;
-    }
-  }
-  std::cout << std::endl;
+float ICP::getError()
+{
+  return meanSquareError;
 }
 
 Points ICP::loadPoints(std::string filename)

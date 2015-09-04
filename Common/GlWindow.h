@@ -46,6 +46,7 @@ protected:
 
   static void shaderRender();
   static void drawText(std::string text, float offset);
+  static void displayTransform(const SE3<> &transform, float offset);
 
   static void renderCallback();
   static void mouseFuncCallback(int button, int state, int x, int y);

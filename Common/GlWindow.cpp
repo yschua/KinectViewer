@@ -218,20 +218,18 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
     refFrameReceive[k] += frameDiffReceive[k];
-    colorReceive[i] = 255;//refFrameReceive[k];
+    colorReceive[i] = 255; //refFrameReceive[k];
   }
 }
 
 void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
                          UINT16 *depthReceive, BYTE *colorReceive)
 {
-  drawText("5. Difference Frame (ICP + Standard Huffman)", 0.f);
-  for (int i = 0; i < COLOR_SIZE; i++)
-    colorReceive[i] = 255;
+  drawText("5. Standard Huffman + ICP (difference frame)", 0.f);
 
   static UINT16 *currentDepth = new UINT16[DEPTH_SIZE]; 
-  static UINT16 *depthEstimate = new UINT16[DEPTH_SIZE];
-  const UINT16 *nextDepth = depthSend;
+  static UINT16 *estimateDepth = new UINT16[DEPTH_SIZE];
+  static UINT16 *nextDepth = new UINT16[DEPTH_SIZE];
   static PointCloud estimatePtCloud;
 
   static INT16 *refFrameSend = new INT16[FRAME_SIZE];
@@ -244,9 +242,14 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
     memset(currentDepth, 0, sizeof(UINT16) * DEPTH_SIZE);
     memset(refFrameSend, 0, sizeof(INT16) * FRAME_SIZE);
     memset(refFrameReceive, 0, sizeof(INT16) * FRAME_SIZE);
-    init = false;
-
     estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
+    init = false;
+  }
+
+  for (int i = 0; i < COLOR_SIZE; i++) colorReceive[i] = 255;
+  for (int i = 0; i < DEPTH_SIZE; i++) {
+    nextDepth[i] = depthSend[i];
+    estimateDepth[i] = 0;
   }
 
   // Convert to world coordinates
@@ -257,10 +260,11 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   icp.computeTransformation();
   SE3<> transform = icp.getTransformation();
-  //std::cout << transformation << std::endl;
-  //icp.getDepthEstimate(depthEstimate);
 
-  //
+  drawText("Iterations: " + std::to_string(icp.getIterations()) + " Error: " + std::to_string(icp.getError()), 0.2f);
+  displayTransform(transform, 0.3f);
+
+  // Apply transformation
   for (int i = 0; i < model.getPointCloud().numVertices; i++) {
     float wx = model.getPointCloud().vertices[i].position.x;
     float wy = model.getPointCloud().vertices[i].position.y;
@@ -275,29 +279,44 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
     estimatePtCloud.vertices[i] = { glm::vec3(wx, wy, wz), glm::vec3(1.f, 1.f, 1.f) };
   }
 
-  int i = 0;
-  for (int iy = 0; iy < DEPTH_HEIGHT; iy++) {
-    for (int ix = 0; ix < DEPTH_WIDTH; ix++) {
-      float wx = estimatePtCloud.vertices[i].position.x;
-      float wy = estimatePtCloud.vertices[i].position.y;
-      float wz = estimatePtCloud.vertices[i].position.z;
+  // Convert estimated world coordinates back to depth
+  for (int i = 0; i < estimatePtCloud.vertices.size(); i++) {
+    glm::vec3 world = estimatePtCloud.vertices[i].position;
+    glm::vec3 image = world * cameraParams.depthIntrinsic;
 
-      glm::vec3 world = glm::vec3(wx, wy, wz);
-      glm::vec3 image = world * cameraParams.depthIntrinsic;
+    int depth = (int)(world.z * 1000.f);
+    int x = (int)(image.x / world.z + 0.5f);
+    int y = (int)(image.y / world.z + 0.5f);
 
-      depthEstimate[DEPTH_SIZE - 1 - i] = (int)(image.x / ix * 1000 + 0.5f);
-      if (depthEstimate[DEPTH_SIZE - 1 - i] < 0) {
-        depthEstimate[DEPTH_SIZE - 1 - i] = 0;
-      } else if (depthEstimate[DEPTH_SIZE - 1 - i] > 4500) {
-        depthEstimate[DEPTH_SIZE - 1 - i] = 4500;
-      }
-      i++;
-    }
+    int depthIndex = (DEPTH_HEIGHT - 1 - y) * DEPTH_WIDTH + (DEPTH_WIDTH - 1 - x);
+    if (depthIndex >= 0 && depthIndex < DEPTH_SIZE)
+      estimateDepth[depthIndex] = limitDepth(depth);
   }
+
+  //for (int iy = 0; iy < DEPTH_HEIGHT; iy++) {
+  //  for (int ix = 0; ix < DEPTH_WIDTH; ix++) {
+  //    float wx = estimatePtCloud.vertices[i].position.x;
+  //    float wy = estimatePtCloud.vertices[i].position.y;
+  //    float wz = estimatePtCloud.vertices[i].position.z;
+
+  //    glm::vec3 world = glm::vec3(wx, wy, wz);
+  //    glm::vec3 image = world * cameraParams.depthIntrinsic;
+
+  //    estimateDepth[DEPTH_SIZE - 1 - i] = (int)(image.x / ix * 1000 + 0.5f);
+  //    
+  //    if (estimateDepth[DEPTH_SIZE - 1 - i] < 0) {
+  //      estimateDepth[DEPTH_SIZE - 1 - i] = 0;
+  //    } else if (estimateDepth[DEPTH_SIZE - 1 - i] > 4500) {
+  //      estimateDepth[DEPTH_SIZE - 1 - i] = 4500;
+  //    }
+
+  //    i++;
+  //  }
+  //}
 
 
   for (int i = 0; i < DEPTH_SIZE; i++) {
-    frameDiffSend[i] = limitDepth(nextDepth[i]) - depthEstimate[i];
+    frameDiffSend[i] = limitDepth(nextDepth[i]) - estimateDepth[i];
   }
 
   Bitset transmitData;
@@ -305,12 +324,10 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
-
-//  std::cout << std::endl;
   
   for (int i = 0; i < DEPTH_SIZE; i++) {
     currentDepth[i] = nextDepth[i];
-    depthReceive[i] = depthEstimate[i];
+    depthReceive[i] = estimateDepth[i];
   }
   icp.clear();
 }
@@ -323,6 +340,22 @@ void GlWindow::drawText(std::string text, float offset)
   glColor4f(1.0f, 0.0f, 0.0f, 1.0f);
   for (int i = 0; i < text.length(); i++)
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
+}
+
+void GlWindow::displayTransform(const SE3<> &transform, float offset)
+{
+
+  drawText("Transformation:", offset);
+  offset += 0.1f;
+  for (int i = 0; i < 3; i++, offset += 0.1f) {
+    auto rotation = transform.get_rotation().get_matrix()[i];
+    auto translation = transform.get_translation()[i];
+
+    drawText(std::to_string(rotation[0]) + ' ' +
+             std::to_string(rotation[1]) + ' ' +
+             std::to_string(rotation[2]) + ' ' +
+             std::to_string(translation), offset);
+  }
 }
 
 void GlWindow::renderCallback()
