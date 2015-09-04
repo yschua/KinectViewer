@@ -12,6 +12,7 @@ CameraParameters cameraParams;
 
 int compressionMode = 1;
 bool stdMode = true;
+bool flag = true;
 const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -204,8 +205,9 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
   } else {
     drawText("4b. Standard Huffman (difference frame)", 0.f);
 
-    stdHuffman.compress(DATA_DEPTH, frameDiffSend, transmitData);
-    stdHuffman.decompress(DATA_DEPTH, transmitData, frameDiffReceive);
+    stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
+    stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+    for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -218,7 +220,7 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
     refFrameReceive[k] += frameDiffReceive[k];
-    colorReceive[i] = 255; //refFrameReceive[k];
+    colorReceive[i] = refFrameReceive[k];
   }
 }
 
@@ -227,37 +229,42 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 {
   drawText("5. Standard Huffman + ICP (difference frame)", 0.f);
 
-  static UINT16 *currentDepth = new UINT16[DEPTH_SIZE]; 
-  static UINT16 *estimateDepth = new UINT16[DEPTH_SIZE];
-  static UINT16 *nextDepth = new UINT16[DEPTH_SIZE];
-  static PointCloud estimatePtCloud;
+  static UINT16 *refDepthSend = new UINT16[DEPTH_SIZE];
+  static BYTE *refColorSend = new BYTE[COLOR_SIZE];
 
-  static INT16 *refFrameSend = new INT16[FRAME_SIZE];
-  static INT16 *refFrameReceive = new INT16[FRAME_SIZE];
+  static UINT16 *estimateDepth = new UINT16[DEPTH_SIZE];
+  static BYTE *estimateColor = new BYTE[COLOR_SIZE];
+
   static INT16 *frameDiffSend = new INT16[FRAME_SIZE];
   static INT16 *frameDiffReceive = new INT16[FRAME_SIZE];
 
+  static PointCloud estimatePtCloud;
+
+  static UINT16 *nextDepth = new UINT16[DEPTH_SIZE];
+
   static bool init = true;
   if (init) {
-    memset(currentDepth, 0, sizeof(UINT16) * DEPTH_SIZE);
-    memset(refFrameSend, 0, sizeof(INT16) * FRAME_SIZE);
-    memset(refFrameReceive, 0, sizeof(INT16) * FRAME_SIZE);
+    memset(refDepthSend, 0, sizeof(UINT16) * DEPTH_SIZE);
+    memset(refColorSend, 0, sizeof(BYTE) * COLOR_SIZE);
     estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
     init = false;
   }
 
-  for (int i = 0; i < COLOR_SIZE; i++) colorReceive[i] = 255;
   for (int i = 0; i < DEPTH_SIZE; i++) {
-    nextDepth[i] = depthSend[i];
     estimateDepth[i] = 0;
+    nextDepth[i] = limitDepth(depthSend[i]);
+  }
+  for (int i = 0; i < COLOR_SIZE; i++) {
+    estimateColor[i] = 0;
   }
 
   // Convert to world coordinates
-  model.updatePointCloud(nextDepth, colorReceive);
+  model.updatePointCloud(nextDepth, colorSend); // new frame
   icp.loadPointsY(model.getPointCloud());
-  model.updatePointCloud(currentDepth, colorReceive);
+  model.updatePointCloud(refDepthSend, refColorSend); // previous frame
   icp.loadPointsX(model.getPointCloud());
 
+  // Compute transformation
   icp.computeTransformation();
   SE3<> transform = icp.getTransformation();
 
@@ -266,69 +273,82 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   // Apply transformation
   for (int i = 0; i < model.getPointCloud().numVertices; i++) {
-    float wx = model.getPointCloud().vertices[i].position.x;
-    float wy = model.getPointCloud().vertices[i].position.y;
-    float wz = model.getPointCloud().vertices[i].position.z;
+    glm::vec3 world = model.getPointCloud().vertices[i].position;
+    glm::vec3 color = model.getPointCloud().vertices[i].color;
 
-    Vector<4> p = makeVector(wx, wy, wz, 1);
-    p = transform * p; 
-    wx = p[0];
-    wy = p[1];
-    wz = p[2];
+    //Vector<4> p = makeVector(world.x, world.y, world.z, 1);
+    //p = transform * p;
+    //world = glm::vec3(p[0], p[1], p[2]);
 
-    estimatePtCloud.vertices[i] = { glm::vec3(wx, wy, wz), glm::vec3(1.f, 1.f, 1.f) };
+    estimatePtCloud.vertices[i] = { world, color };
   }
 
   // Convert estimated world coordinates back to depth
   for (int i = 0; i < estimatePtCloud.vertices.size(); i++) {
     glm::vec3 world = estimatePtCloud.vertices[i].position;
     glm::vec3 image = world * cameraParams.depthIntrinsic;
+    glm::vec3 color = estimatePtCloud.vertices[i].color;
 
-    int depth = (int)(world.z * 1000.f);
+    int depth = (int)(world.z * 1000.f + 0.5f);
     int x = (int)(image.x / world.z + 0.5f);
     int y = (int)(image.y / world.z + 0.5f);
 
     int depthIndex = (DEPTH_HEIGHT - 1 - y) * DEPTH_WIDTH + (DEPTH_WIDTH - 1 - x);
-    if (depthIndex >= 0 && depthIndex < DEPTH_SIZE)
-      estimateDepth[depthIndex] = limitDepth(depth);
+    if (depthIndex >= 0 && depthIndex < DEPTH_SIZE) {
+      estimateDepth[depthIndex] = depth;
+      estimateColor[depthIndex * 3] = (int)(color.r * 255.f);
+      estimateColor[depthIndex * 3 + 1] = (int)(color.g * 255.f);
+      estimateColor[depthIndex * 3 + 2] = (int)(color.b * 255.f);
+    }
   }
 
-  //for (int iy = 0; iy < DEPTH_HEIGHT; iy++) {
-  //  for (int ix = 0; ix < DEPTH_WIDTH; ix++) {
-  //    float wx = estimatePtCloud.vertices[i].position.x;
-  //    float wy = estimatePtCloud.vertices[i].position.y;
-  //    float wz = estimatePtCloud.vertices[i].position.z;
-
-  //    glm::vec3 world = glm::vec3(wx, wy, wz);
-  //    glm::vec3 image = world * cameraParams.depthIntrinsic;
-
-  //    estimateDepth[DEPTH_SIZE - 1 - i] = (int)(image.x / ix * 1000 + 0.5f);
-  //    
-  //    if (estimateDepth[DEPTH_SIZE - 1 - i] < 0) {
-  //      estimateDepth[DEPTH_SIZE - 1 - i] = 0;
-  //    } else if (estimateDepth[DEPTH_SIZE - 1 - i] > 4500) {
-  //      estimateDepth[DEPTH_SIZE - 1 - i] = 4500;
-  //    }
-
-  //    i++;
-  //  }
-  //}
-
-
-  for (int i = 0; i < DEPTH_SIZE; i++) {
-    frameDiffSend[i] = limitDepth(nextDepth[i]) - estimateDepth[i];
+  // Compute frame difference
+  int k = 0;
+  for (int i = 0; i < DEPTH_SIZE; i++, k++) {
+    frameDiffSend[k] = nextDepth[i] - estimateDepth[i];
+    refDepthSend[i] = nextDepth[i];
   }
+  for (int i = 0; i < COLOR_SIZE; i++, k++) {
+    frameDiffSend[k] = colorSend[i] - refColorSend[i];//estimateColor[i];
+    refColorSend[i] = colorSend[i];
+  }
+
+  static BYTE *test = new BYTE[COLOR_SIZE];
+  for (int i = 0; i < COLOR_SIZE; i++) test[i] = colorSend[i];
 
   Bitset transmitData;
-  stdHuffman.compress(DATA_DEPTH, frameDiffSend, transmitData);
+  stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
+  //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+  for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
 
-  float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
+  float compressionRatio = UNCOMPRESSED_SIZE / (float)(transmitData.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
   
-  for (int i = 0; i < DEPTH_SIZE; i++) {
-    currentDepth[i] = nextDepth[i];
-    depthReceive[i] = estimateDepth[i];
+  k = 0;
+  for (int i = 0; i < DEPTH_SIZE; i++, k++) {
+    depthReceive[i] = estimateDepth[i];// +frameDiffReceive[k];
+
+    if (depthReceive[i] != nextDepth[i]) {
+      //std::cout << "Depth: " << depthReceive[i] << ' ' << nextDepth[i] << std::endl;
+    }
   }
+  for (int i = 0; i < COLOR_SIZE; i++, k++) {
+    colorReceive[i] = estimateColor[i];// +frameDiffReceive[k];
+
+    if (colorReceive[i] != colorSend[i]) {
+      //std::cout << "Color: " << colorReceive[i] << ' ' << colorSend[i] << std::endl;
+    }
+  }
+
+  //for (int i = 0; i < DEPTH_SIZE; i++) {
+  //  currentDepth[i] = nextDepth[i];
+  //  depthReceive[i] = estimateDepth[i];
+  //}
+
+  //for (int i = 0; i < COLOR_SIZE; i++) {
+  //  colorReceive[i] = estimateColor[i];
+  //}
+
   icp.clear();
 }
 
@@ -344,7 +364,6 @@ void GlWindow::drawText(std::string text, float offset)
 
 void GlWindow::displayTransform(const SE3<> &transform, float offset)
 {
-
   drawText("Transformation:", offset);
   offset += 0.1f;
   for (int i = 0; i < 3; i++, offset += 0.1f) {
@@ -529,6 +548,9 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       break;
     case 'm':
       stdMode = !stdMode;
+      break;
+    case 'f':
+      flag = !flag;
       break;
     case 27: // ESC
       closeCallback();

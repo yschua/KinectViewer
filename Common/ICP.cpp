@@ -53,7 +53,7 @@ void ICP::computeTransformation()
   iterations = 0;
   float errorSum = 0.f;
   meanSquareError = 1.f;
-  float eps = 0.0001f;
+  float eps = 0.000001f;
   transformation = SE3<>();
 
   while (meanSquareError > eps && iterations < 5) {
