@@ -309,18 +309,10 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
     frameDiffSend[k] = nextDepth[i] - estimateDepth[i];
     refDepthSend[i] = nextDepth[i];
-    if (abs(frameDiffSend[k]) > 4500) {
-      std::cout << "depth " << nextDepth[i] << ' ' << estimateDepth[i] << std::endl;
-      system("pause");
-    }
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
     frameDiffSend[k] = colorSend[i] - estimateColor[i];
     refColorSend[i] = colorSend[i];
-    if (abs(frameDiffSend[k]) > 4500) {
-      std::cout << colorSend[i] << ' ' << estimateColor[i] << std::endl;
-      system("pause");
-    }
   }
 
   Bitset transmitData;
