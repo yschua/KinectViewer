@@ -108,9 +108,9 @@ void KinectCamera::update()
           colorBufferReduced[depthIndex * 3 + 1] = color.rgbGreen;
           colorBufferReduced[depthIndex * 3 + 2] = color.rgbBlue;
         } else {
-          colorBufferReduced[depthIndex * 3] = 128;
-          colorBufferReduced[depthIndex * 3 + 1] = 128;
-          colorBufferReduced[depthIndex * 3 + 2] = 128;
+          colorBufferReduced[depthIndex * 3] = 0;
+          colorBufferReduced[depthIndex * 3 + 1] = 0;
+          colorBufferReduced[depthIndex * 3 + 2] = 0;
         }
       }
     }
