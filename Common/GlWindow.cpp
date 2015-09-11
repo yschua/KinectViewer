@@ -41,8 +41,8 @@ GlWindow::~GlWindow()
 
 void GlWindow::show()
 {
-  //glutIdleFunc(renderCallback);
-  glutTimerFunc(500, timerCallback, 0);
+  glutIdleFunc(renderCallback);
+  //glutTimerFunc(500, timerCallback, 0);
   glutMouseFunc(mouseFuncCallback);
   glutMotionFunc(mouseMotionCallback);
   glutKeyboardFunc(keyboardFuncCallback);
@@ -329,7 +329,7 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   timer.startTimer();
   stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
   timer.stopTimer();
-  std::cout << "Decompress: " << timer.getElapsedTime() << std::endl;
+  //std::cout << "Decompress: " << timer.getElapsedTime() << std::endl;
   //for (int i = 0; i < FRAME_SIZE; i++) {
   //  if (frameDiffReceive[i] != frameDiffSend[i]) {
   //    for (int j = 0; j < 10; j++) {

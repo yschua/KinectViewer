@@ -25,9 +25,9 @@ void StdHuffmanCompressor::compress(DataType dataType, const INT16 *data, Bitset
   std::string encodedData("");
   timer.startTimer();
   for (int i = 0; i < dataSize[dataType]; i++)
-    encodedData += mapTable[dataType][data[i]];
+    encodedData += mapTable[dataType][data[i] + 4500];
   timer.stopTimer();
-  std::cout << "Compress: " << timer.getElapsedTime() << std::endl << std::endl;
+  //std::cout << "Compress-encode: " << timer.getElapsedTime() << std::endl;
   std::reverse(encodedData.begin(), encodedData.end());
   transmitData = Bitset(encodedData);
 }
@@ -75,6 +75,10 @@ void StdHuffmanCompressor::constructHistogram()
 
 void StdHuffmanCompressor::loadTable()
 {
+  for (int i = 0; i < 3; i++) {
+    mapTable[i] = MapTable(10000);
+  }
+
   // Load map tables
   loadMapTable(DATA_DEPTH, "depth");
   loadMapTable(DATA_COLOR, "color");
@@ -94,7 +98,7 @@ void StdHuffmanCompressor::loadMapTable(DataType dataType, std::string name)
 
   file.open("maptbl-" + name + ".txt", std::ios::in);
   while (file >> value >> code)
-    mapTable[dataType][value] = code;
+    mapTable[dataType][value + 4500] = code;
   file.close();
 }
 
