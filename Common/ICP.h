@@ -34,7 +34,7 @@ public:
 protected:
   Points loadPoints(std::string filename);
   double computeDistance2(Vector<4> p, Vector<4> q);
-  void findNearest(const Vector<4> &xp, Vector<4> &error, float &distance2);
+  void findNearest(const Vector<4> &xp, int index, Vector<4> &error, float &distance2);
   void createJacobian(const Vector<4> &xp, Matrix<3, 6> &jacobian);
   
 };

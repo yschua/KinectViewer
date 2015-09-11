@@ -21,15 +21,15 @@ StdHuffmanCompressor::~StdHuffmanCompressor()
 }
 
 void StdHuffmanCompressor::compress(DataType dataType, const INT16 *data, Bitset &transmitData)
-{
-  timer.startTimer();
+{ 
   std::string encodedData("");
-  for (int i = 0; i < dataSize[dataType]; i++) 
+  timer.startTimer();
+  for (int i = 0; i < dataSize[dataType]; i++)
     encodedData += mapTable[dataType][data[i]];
+  timer.stopTimer();
+  std::cout << "Compress: " << timer.getElapsedTime() << std::endl << std::endl;
   std::reverse(encodedData.begin(), encodedData.end());
   transmitData = Bitset(encodedData);
-  timer.stopTimer();
-  //std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
 }
 
 void StdHuffmanCompressor::decompress(DataType dataType, const Bitset &transmitData, INT16 *dataOut)

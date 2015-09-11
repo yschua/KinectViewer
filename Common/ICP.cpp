@@ -68,13 +68,15 @@ void ICP::computeTransformation()
       Matrix<3, 6> jacobian = Zeros;
 
       // Find nearest neighbour
-      findNearest(xp[i], error, distance2);
+      findNearest(xp[i], i, error, distance2);
       errorSum += distance2;
       createJacobian(xp[i], jacobian);
 
       // WLS estimation
+      float c = 0.002;
+      float weight = c / (c + error * error);
       for (int j = 0; j < 3; j++)
-        w.add_mJ(error[j], jacobian[j]);
+        w.add_mJ(error[j], jacobian[j], weight);
     }
 
     if ((meanSquareError = errorSum / xp.size()) > eps) {
@@ -141,10 +143,11 @@ double ICP::computeDistance2(Vector<4> p, Vector<4> q)
   return (p - q) * (p - q);
 }
 
-void ICP::findNearest(const Vector<4> &xp, Vector<4> &error, float &distance2)
+void ICP::findNearest(const Vector<4> &xp, int index, Vector<4> &error, float &distance2)
 {
   distance2 = 1e9;
   for (int i = 0; i < y.size(); i++) {
+  //for (int i = max(index - 10, 0); i < min(index + 10, y.size()); i++) {
     float currentDistance = computeDistance2(xp, y[i]);
     if (currentDistance < distance2) {
       distance2 = currentDistance;
