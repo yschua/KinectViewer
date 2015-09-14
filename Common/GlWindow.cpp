@@ -266,17 +266,13 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   model.updatePointCloud(refDepthSend, refColorSend); // previous frame
   icp.loadPointsX(model.getPointCloud());
 
-  timer.startTimer();
   // Compute transformation
   icp.computeTransformation();
   SE3<> transform = icp.getTransformation();
-  timer.stopTimer();
-  //std::cout << "ICP: " << timer.getElapsedTime() << std::endl;
 
   drawText("Iterations: " + std::to_string(icp.getIterations()) + " Error: " + std::to_string(icp.getError()), 0.2f);
   displayTransform(transform, 0.3f);
 
-  timer.startTimer();
   // Apply transformation
   for (int i = 0; i < model.getPointCloud().numVertices; i++) {
     glm::vec3 world = model.getPointCloud().vertices[i].position;
@@ -288,8 +284,6 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
     estimatePtCloud.vertices[i] = { world, color };
   }
-  timer.stopTimer();
-  //std::cout << "Transform: " << timer.getElapsedTime() << std::endl;
 
   // Convert estimated world coordinates back to depth
   for (int i = 0; i < estimatePtCloud.vertices.size(); i++) {
@@ -322,14 +316,8 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   }
 
   Bitset transmitData;
-  timer.startTimer();
   stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-  timer.stopTimer();
-  std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
-  timer.startTimer();
   stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
-  timer.stopTimer();
-  //std::cout << "Decompress: " << timer.getElapsedTime() << std::endl;
   //for (int i = 0; i < FRAME_SIZE; i++) {
   //  if (frameDiffReceive[i] != frameDiffSend[i]) {
   //    for (int j = 0; j < 10; j++) {

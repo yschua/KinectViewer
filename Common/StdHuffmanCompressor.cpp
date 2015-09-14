@@ -22,13 +22,54 @@ StdHuffmanCompressor::~StdHuffmanCompressor()
 
 void StdHuffmanCompressor::compress(DataType dataType, const INT16 *data, Bitset &transmitData)
 { 
+  std::vector<int> test(10000);
+  for (int i = 0; i < test.size(); i++) {
+    test[i] = 10;
+  }
+
+  std::vector<char> stream;
+
+  std::cout << "compressing" << std::endl;
   std::string encodedData("");
+  std::string buffer;
   timer.startTimer();
-  for (int i = 0; i < dataSize[dataType]; i++)
-    encodedData += mapTable[dataType][data[i] + 4500];
+  std::bitset<16> wtf;
+  int wow;
+  int track = 0;
+  
+  char byte = 0; char charBit = 0;
+  for (int i = 0; i < dataSize[dataType]; i++) {
+    //wtf = mapTable[dataType][data[i]];
+    bool flag = false;
+    for (int j = 0; j < 32; j++) {
+      int bit = (test[i%100] << j) & 0x80000000;
+      if (bit == 0x80000000) flag = true;
+      if (flag) {
+        if (bit == 0x80000000) {
+          byte |= 0x1;
+        }
+        byte <<= 1;
+        
+        charBit++;
+        if (charBit % 8 == 0) {
+          byte = 0;
+          std::cout << int(byte) << std::endl;
+        }
+      }
+
+      track += j;
+    }
+
+    track = i;
+
+
+    //boost::to_string(mapTable[dataType][data[i] + 4500], buffer);
+    //encodedData = buffer + encodedData;
+  }
   timer.stopTimer();
-  //std::cout << "Compress-encode: " << timer.getElapsedTime() << std::endl;
-  std::reverse(encodedData.begin(), encodedData.end());
+  std::cout << "Compress-encode: " << timer.getElapsedTime() << std::endl;
+  std::cout << track << std::endl;
+  //std::reverse(encodedData.begin(), encodedData.end());
   transmitData = Bitset(encodedData);
 }
 
@@ -85,9 +126,9 @@ void StdHuffmanCompressor::loadTable()
   loadMapTable(DATA_COMBINED, "combined");
 
   // Load unmap tables
-  loadUnmapTable(DATA_DEPTH, "depth");
-  loadUnmapTable(DATA_COLOR, "color");
-  loadUnmapTable(DATA_COMBINED, "combined");
+  //loadUnmapTable(DATA_DEPTH, "depth");
+  //loadUnmapTable(DATA_COLOR, "color");
+  //loadUnmapTable(DATA_COMBINED, "combined");
 }
 
 void StdHuffmanCompressor::loadMapTable(DataType dataType, std::string name)
@@ -98,7 +139,7 @@ void StdHuffmanCompressor::loadMapTable(DataType dataType, std::string name)
 
   file.open("maptbl-" + name + ".txt", std::ios::in);
   while (file >> value >> code)
-    mapTable[dataType][value + 4500] = code;
+    mapTable[dataType][value + 4500] = Bitset(code);
   file.close();
 }
 

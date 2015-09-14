@@ -13,7 +13,7 @@ struct LookupValue {
 };
 
 typedef std::unordered_map<INT16, int> Histogram;
-typedef std::vector<std::string> MapTable;
+typedef std::vector<Bitset> MapTable;
 typedef std::unordered_map<int, LookupValue> UnmapTable;
 
 class StdHuffmanCompressor : public HuffmanCompressor {
