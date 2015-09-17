@@ -322,23 +322,8 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   }
 
   Bitset transmitData;
-  timer.startTimer();
   stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-  timer.stopTimer();
-  std::cout << "Compress: " << timer.getElapsedTime() << std::endl;
-  timer.startTimer();
   stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
-  timer.stopTimer();
-  //std::cout << "Decompress: " << timer.getElapsedTime() << std::endl;
-  //for (int i = 0; i < FRAME_SIZE; i++) {
-  //  if (frameDiffReceive[i] != frameDiffSend[i]) {
-  //    for (int j = 0; j < 10; j++) {
-  //      std::cout << i-j << ' ' << frameDiffReceive[i-j] << ' ' << frameDiffSend[i-j] << std::endl;
-  //      
-  //    } 
-  //    system("pause");
-  //  }
-  //}
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)(transmitData.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
