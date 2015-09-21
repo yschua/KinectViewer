@@ -42,7 +42,7 @@ GlWindow::~GlWindow()
 void GlWindow::show()
 {
   glutIdleFunc(renderCallback);
-  //glutTimerFunc(500, timerCallback, 0);
+  //glutTimerFunc(66, timerCallback, 0);
   glutMouseFunc(mouseFuncCallback);
   glutMotionFunc(mouseMotionCallback);
   glutKeyboardFunc(keyboardFuncCallback);
@@ -207,12 +207,15 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
     drawText("4b. Standard Huffman (difference frame)", 0.f);
 
     stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-    stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
-    //for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
+    //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+    for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
+  std::ofstream file("framediff-compress-data.txt", std::ios::app);
+  file << compressionRatio << std::endl;
+  file.close();
 
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
@@ -253,7 +256,7 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   }
 
   for (int i = 0; i < DEPTH_SIZE; i++) {
-    estimateDepth[i] = 0;
+    estimateDepth[i] = refDepthSend[i];
     nextDepth[i] = limitDepth(depthSend[i]);
   }
   for (int i = 0; i < COLOR_SIZE; i++) {
@@ -323,11 +326,14 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   Bitset transmitData;
   stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-  stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+  //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
 
-  float compressionRatio = UNCOMPRESSED_SIZE / (float)(transmitData.size());
+  float compressionRatio = (UNCOMPRESSED_SIZE + 16 * 32) / (float)(transmitData.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
-  
+  std::ofstream file("icp-compress-data.txt", std::ios::app);
+  file << compressionRatio << std::endl;
+  file.close();
+
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
     depthReceive[i] = estimateDepth[i] + frameDiffReceive[k];
@@ -367,7 +373,7 @@ void GlWindow::displayTransform(const SE3<> &transform, float offset)
 void GlWindow::timerCallback(int value)
 {
   renderCallback();
-  glutTimerFunc(200, timerCallback, value);
+  glutTimerFunc(83, timerCallback, value);
 }
 
 void GlWindow::renderCallback()
