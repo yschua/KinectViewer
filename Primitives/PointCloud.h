@@ -8,6 +8,6 @@ struct PointCloud {
   GLuint numVertices; // don't use this, use vertices.size()
   GLsizeiptr bufferSize() const
   {
-    return numVertices * sizeof(vertices[0]);
+    return vertices.size() * sizeof(vertices[0]);
   }
 };

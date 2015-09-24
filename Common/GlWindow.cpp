@@ -6,6 +6,7 @@ KinectCamera kinectCamera;
 HuffmanCompressor huffman;
 StdHuffmanCompressor stdHuffman;
 ModelGenerator model(DEPTH_WIDTH, DEPTH_HEIGHT);
+CubeGenerator cube;
 Core::Timer timer;
 ICP icp;
 CameraParameters cameraParams;
@@ -19,7 +20,7 @@ GlWindow::GlWindow(int argc, char *argv[])
 {
   glutInit(&argc, argv);
   glutInitWindowSize(800, 600);
-  glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
+  glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE | GLUT_MULTISAMPLE);
   glutCreateWindow("KinectViewer");
   glewInit();
   glEnable(GL_DEPTH_TEST);
@@ -27,6 +28,7 @@ GlWindow::GlWindow(int argc, char *argv[])
   // glPointSize(1.f);
   
   model.loadModel();
+  cube.loadModel();
 
   Core::ShaderLoader shaderLoader;
   program = shaderLoader.createProgram("Shaders\\VertexShader.glsl",
@@ -345,6 +347,21 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   icp.clear();
 }
 
+void GlWindow::cubeDemo()
+{
+  glm::mat4 modelMatrix = glm::scale(glm::vec3(0.1f, 0.1f, 0.1f));
+  // modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
+  modelMatrix = glm::translate(modelMatrix, glm::vec3(0.f, 0.f, 4.f));
+  glm::mat4 viewMatrix = glCamera.getViewMatrix();
+  glm::mat4 projectionMatrix = glm::perspective(45.0f, 64.0f / 53.0f, 0.1f, 1.0f);
+  glm::mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
+
+  glUseProgram(program);
+  GLuint mvpMatrix = glGetUniformLocation(program, "mvpMatrix");
+  glUniformMatrix4fv(mvpMatrix, 1, GL_FALSE, &mvp[0][0]);
+  glDrawArrays(GL_QUADS, 0, cube.getNumVertices());
+}
+
 void GlWindow::drawText(std::string text, float offset)
 {
   glUseProgram(0);
@@ -391,6 +408,7 @@ void GlWindow::renderCallback()
   static UINT16 *depthReceive = new UINT16[DEPTH_SIZE];
   static BYTE *colorReceive = new BYTE[COLOR_SIZE];
 
+  compressionMode = 6; // temp
   switch (compressionMode) {
     case 1: {
       drawText("1. No compression", 0.0f);
@@ -416,8 +434,12 @@ void GlWindow::renderCallback()
   }
 
   // Receiver computer renders received frame data
-  model.updatePointCloud(depthReceive, colorReceive);
-  shaderRender();
+  if (compressionMode <= 5) {
+    model.updatePointCloud(depthReceive, colorReceive);
+    shaderRender();
+  } else {
+    cubeDemo();
+  }
 
   timer.stopTimer();
   drawText("FPS: " + std::to_string(timer.getFPS()), 1.8f);
@@ -543,6 +565,7 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     case '3':
     case '4':
     case '5':
+    case '6':
       compressionMode = key - '0';
       break;
     case 'm':

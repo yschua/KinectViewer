@@ -3,6 +3,7 @@
 #include "Core\Timer.h"
 #include "Common\Camera.h"
 #include "Common\ModelGenerator.h"
+#include "Common\CubeGenerator.h"
 #include "Common\KinectCamera.h"
 #include "Common\HuffmanCompressor.h"
 #include "Common\StdHuffmanCompressor.h"
@@ -43,6 +44,7 @@ protected:
                        UINT16 *depthReceive, BYTE *colorReceive, bool stdMode);
   static void frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
                        UINT16 *depthReceive, BYTE *colorReceive);
+  static void cubeDemo();
 
   static void shaderRender();
   static void drawText(std::string text, float offset);

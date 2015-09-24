@@ -1,5 +1,11 @@
 #include "ModelGenerator.h"
 
+ModelGenerator::ModelGenerator() :
+  WIDTH(0),
+  HEIGHT(0)
+{
+}
+
 ModelGenerator::ModelGenerator(int width, int height) :
   WIDTH(width),
   HEIGHT(height)
@@ -13,7 +19,7 @@ ModelGenerator::~ModelGenerator()
 
 int ModelGenerator::getNumVertices()
 {
-  return pointCloud.numVertices;
+  return pointCloud.vertices.size();
 }
 
 PointCloud &ModelGenerator::getPointCloud()

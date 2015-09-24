@@ -9,12 +9,14 @@
 #include <glm\glm.hpp>
 
 class ModelGenerator {
+  const int WIDTH;
+  const int HEIGHT;
+protected:
   PointCloud pointCloud;
   CameraParameters cameraParameters;
   Core::Timer timer;
-  const int WIDTH;
-  const int HEIGHT;
 public:
+  ModelGenerator();
   ModelGenerator(int width, int height);
   ~ModelGenerator();
   int getNumVertices();

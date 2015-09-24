@@ -90,6 +90,7 @@
     <ClCompile Include="Common\HuffmanCompressor.cpp" />
     <ClCompile Include="Common\StdHuffmanCompressor.cpp" />
     <ClCompile Include="Common\ICP.cpp" />
+    <ClCompile Include="Common\CubeGenerator.cpp" />
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
@@ -97,6 +98,7 @@
     <ClInclude Include="Common\KinectCamera.h" />
     <ClInclude Include="Common\HuffmanCompressor.h" />
     <ClInclude Include="Common\ICP.h" />
+    <ClInclude Include="Common\CubeGenerator.h" />
     <ClInclude Include="Primitives\CameraParameters.h" />
     <ClInclude Include="Primitives\DataSize.h" />
     <ClInclude Include="Primitives\PointCloud.h" />
