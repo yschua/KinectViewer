@@ -247,12 +247,27 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   static UINT16 *nextDepth = new UINT16[DEPTH_SIZE];
   static BYTE *nextColor = new BYTE[COLOR_SIZE];
 
+  static UINT16 *cubeDepth = new UINT16[DEPTH_SIZE];
+  static ModelGenerator cube(DEPTH_WIDTH, DEPTH_HEIGHT);
+
   static bool init = true;
   if (init) {
     memset(refDepthSend, 0, sizeof(UINT16) * DEPTH_SIZE);
     memset(refColorSend, 0, sizeof(BYTE) * COLOR_SIZE);
     estimatePtCloud.vertices = std::vector<Vertex>(DEPTH_SIZE);
     init = false;
+
+    //for (int i = 0; i < DEPTH_SIZE; i++) cubeDepth[i] = 1000;
+    for (int y = 0; y < DEPTH_HEIGHT; y++) {
+      for (int x = 0; x < DEPTH_WIDTH; x++) {
+        int depthIndex = y * DEPTH_WIDTH + x;
+        if (x > 100 && x < 300 && y > 100 & y < 300)
+          cubeDepth[depthIndex] = 1000;
+        else
+          cubeDepth[depthIndex] = 0;
+      }
+    }
+    
   }
 
   for (int i = 0; i < DEPTH_SIZE; i++) {
@@ -294,6 +309,27 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   timer.stopTimer();
   //std::cout << "Transform: " << timer.getElapsedTime() << std::endl;
 
+  cube.updatePointCloud(cubeDepth, refColorSend);
+  memset(cubeDepth, 0, sizeof(UINT16) * DEPTH_SIZE);
+  for (int i = 0; i < cube.getPointCloud().numVertices; i++) {
+    glm::vec3 world = cube.getPointCloud().vertices[i].position;
+
+    Vector<4> p = makeVector(world.x, world.y, world.z, 1);
+    p = transform * p;
+    world = glm::vec3(p[0], p[1], p[2]);
+    
+    glm::vec3 image = world * cameraParams.depthIntrinsic;
+
+    int depth = (int)(world.z * 1000.f + 0.5f);
+    int x = (int)(image.x / world.z + 0.5f);
+    int y = (int)(image.y / world.z + 0.5f);
+
+    int depthIndex = (DEPTH_HEIGHT - 1 - y) * DEPTH_WIDTH + (DEPTH_WIDTH - 1 - x);
+    if (depthIndex >= 0 && depthIndex < DEPTH_SIZE) {
+      cubeDepth[depthIndex] = limitDepth(depth);
+    }
+  }
+
   // Convert estimated world coordinates back to depth
   for (int i = 0; i < estimatePtCloud.vertices.size(); i++) {
     glm::vec3 world = estimatePtCloud.vertices[i].position;
@@ -325,7 +361,7 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   }
 
   Bitset transmitData;
-  stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
+  //stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
   //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
 
   float compressionRatio = (UNCOMPRESSED_SIZE + 16 * 32) / (float)(transmitData.size());
@@ -336,10 +372,10 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
-    depthReceive[i] = estimateDepth[i] + frameDiffReceive[k];
+    depthReceive[i] = cubeDepth[i];// estimateDepth[i] + frameDiffReceive[k];
   }
   for (int i = 0; i < COLOR_SIZE; i++, k++) {
-    colorReceive[i] = estimateColor[i] + frameDiffReceive[k];
+    colorReceive[i] = 255;// estimateColor[i] + frameDiffReceive[k];
   }
 
   icp.clear();
