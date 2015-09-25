@@ -44,7 +44,7 @@ protected:
                        UINT16 *depthReceive, BYTE *colorReceive, bool stdMode);
   static void frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
                        UINT16 *depthReceive, BYTE *colorReceive);
-  static void cubeDemo();
+  static void cubeDemo(const UINT16 *depth);
 
   static void shaderRender();
   static void drawText(std::string text, float offset);

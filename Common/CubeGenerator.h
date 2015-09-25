@@ -6,5 +6,6 @@ class CubeGenerator :
 public:
   CubeGenerator();
   ~CubeGenerator();
+  void reset();
 };
 

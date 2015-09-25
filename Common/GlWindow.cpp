@@ -347,13 +347,68 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   icp.clear();
 }
 
-void GlWindow::cubeDemo()
+void GlWindow::cubeDemo(const UINT16 *depth)
 {
+  static UINT16 *refDepth = new UINT16[DEPTH_SIZE];
+  static BYTE *refColor = new BYTE[COLOR_SIZE];
+
+  static bool init = true;
+  static int count = 0;
+  if (init) {
+    memset(refDepth, 0, sizeof(UINT16) * DEPTH_SIZE);
+    memset(refColor, 0, sizeof(BYTE) * COLOR_SIZE);
+    init = false;
+  }
+  count++;
+  if (count == 100) {
+    std::cout << "reset" << std::endl;
+    cube.reset();
+  }
+  // Convert to world coordinates
+  model.updatePointCloud(depth, refColor); // new frame
+  icp.loadPointsY(model.getPointCloud());
+  model.updatePointCloud(refDepth, refColor); // previous frame
+  icp.loadPointsX(model.getPointCloud());
+
+  for (int i = 0; i < DEPTH_SIZE; i++)
+    refDepth[i] = depth[i];
+
+  // Compute transformation
+  if (count > 1)
+    icp.computeTransformation();
+  SE3<> transform = icp.getTransformation();
+
+
+  Matrix<3> flipY;
+  flipY[0] = makeVector(1, 0, 0);
+  flipY[1] = makeVector(0, -1, 0);
+  flipY[2] = makeVector(0, 0, 1);
+  Matrix<3> mat = transform.get_rotation().get_matrix();
+  mat = flipY * mat * flipY;
+  transform.get_rotation() = SO3<>(mat);
+
+  transform.get_translation()[2] *= 2; // scale z displacement
+
+  displayTransform(transform, 0.3f);
+  icp.clear();
+  //std::cout << transform.ln() << std::endl;
+  
+  // Apply transformation
+  for (int i = 0; i < cube.getNumVertices(); i++) {
+    glm::vec3 world = cube.getPointCloud().vertices[i].position;
+
+    Vector<4> p = makeVector(world.x, world.y, world.z, 1);
+    p =  transform * p;
+    cube.getPointCloud().vertices[i].position = glm::vec3(p[0], p[1], p[2]);
+  }
+
+  glBufferData(GL_ARRAY_BUFFER, cube.getPointCloud().bufferSize(), &cube.getPointCloud().vertices[0], GL_DYNAMIC_DRAW);
+
   glm::mat4 modelMatrix = glm::scale(glm::vec3(0.1f, 0.1f, 0.1f));
   // modelMatrix = glm::rotate(modelMatrix, 0.0f, glm::vec3(1.0f, 0.0f, 0.0f));
-  modelMatrix = glm::translate(modelMatrix, glm::vec3(0.f, 0.f, 4.f));
+  //modelMatrix = glm::translate(modelMatrix, glm::vec3(0.f, 0.f, 0.f));
   glm::mat4 viewMatrix = glCamera.getViewMatrix();
-  glm::mat4 projectionMatrix = glm::perspective(45.0f, 64.0f / 53.0f, 0.1f, 1.0f);
+  glm::mat4 projectionMatrix = glm::perspective(45.0f, 64.0f / 53.0f, 0.1f, 10.0f);
   glm::mat4 mvp = projectionMatrix * viewMatrix * modelMatrix;
 
   glUseProgram(program);
@@ -438,7 +493,7 @@ void GlWindow::renderCallback()
     model.updatePointCloud(depthReceive, colorReceive);
     shaderRender();
   } else {
-    cubeDemo();
+    cubeDemo(depthSend);
   }
 
   timer.stopTimer();
@@ -541,6 +596,7 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     //////// temporary /////////
     case ' ':
       glCamera.resetView();
+      cube.reset();
       break;
     case 'w':
       glCamera.moveCameraPosition(0, 0, 1);
