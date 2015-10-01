@@ -17,6 +17,9 @@
 #include <glm\glm.hpp>
 #include <glm\gtx\transform.hpp>
 #include <glm\gtc\matrix_transform.hpp>
+#include "OVR_CAPI.h"
+#include "OVR_CAPI_GL.h"
+#include "Extras\OVR_Math.h"
 
 #define NOMINMAX
 #define limitDepth(depth) std::min(int(depth), int(MAX_DEPTH))

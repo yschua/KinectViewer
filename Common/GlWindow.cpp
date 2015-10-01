@@ -10,6 +10,12 @@ Core::Timer timer;
 ICP icp;
 CameraParameters cameraParams;
 
+ovrHmd hmd;
+ovrGraphicsLuid luid;
+ovrHmdDesc hmdDesc;
+ovrRecti eyeRenderViewport[2];
+ovrGLTexture eyeTexture[2];
+
 int compressionMode = 1;
 bool stdMode = true;
 bool flag = true;
@@ -17,8 +23,39 @@ const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
 
 GlWindow::GlWindow(int argc, char *argv[])
 {
+  // OVR initialize
+  ovr_Initialize(NULL);
+  ovr_Create(&hmd, &luid);
+  
+  hmdDesc = ovr_GetHmdDesc(hmd);
+  ovrSizei windowSize = { hmdDesc.Resolution.w / 2, hmdDesc.Resolution.h / 2 };
+
+  ovr_ConfigureTracking(hmd, ovrTrackingCap_Orientation | ovrTrackingCap_MagYawCorrection | ovrTrackingCap_Position, 0);
+
+  OVR::Sizei recommendedTex0Size = ovr_GetFovTextureSize(hmd, ovrEye_Left, hmdDesc.DefaultEyeFov[0], 1.0f);
+  OVR::Sizei recommendedTex1Size = ovr_GetFovTextureSize(hmd, ovrEye_Right, hmdDesc.DefaultEyeFov[1], 1.0f);
+  OVR::Sizei renderTargetSize;
+  renderTargetSize.w = recommendedTex0Size.w + recommendedTex1Size.w;
+  renderTargetSize.h = (recommendedTex0Size.h>recommendedTex1Size.h ? recommendedTex0Size.h : recommendedTex1Size.h);
+
+  ovrFovPort eyeFov[2] = { hmdDesc.DefaultEyeFov[0], hmdDesc.DefaultEyeFov[1] };
+
+  eyeRenderViewport[0].Pos = OVR::Vector2i(0, 0);
+  eyeRenderViewport[0].Size = OVR::Sizei(renderTargetSize.w / 2, renderTargetSize.h);
+
+  eyeRenderViewport[1].Pos = OVR::Vector2i((renderTargetSize.w + 1) / 2, 0);
+  eyeRenderViewport[1].Size = eyeRenderViewport[0].Size;
+
+  eyeTexture[0].OGL.Header.TextureSize = renderTargetSize;
+  //eyeTexture[0].OGL.Header.RenderViewport = eyeRenderViewport[0];
+
+  eyeTexture[1] = eyeTexture[0];
+  //eyeTexture[1].OGL.Header.RenderViewport = eyeRenderViewport[1];
+
+
+  // GL initialize
   glutInit(&argc, argv);
-  glutInitWindowSize(800, 600);
+  glutInitWindowSize(windowSize.w, windowSize.h);
   glutInitDisplayMode(GLUT_RGBA | GLUT_DEPTH | GLUT_DOUBLE);
   glutCreateWindow("KinectViewer");
   glewInit();
@@ -35,6 +72,9 @@ GlWindow::GlWindow(int argc, char *argv[])
 
 GlWindow::~GlWindow()
 {
+  ovr_Destroy(hmd);
+  ovr_Shutdown();
+
   glUseProgram(0);
   glDeleteProgram(program);
 }
