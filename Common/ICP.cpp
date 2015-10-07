@@ -30,8 +30,10 @@ void ICP::loadPointsX(PointCloud &pointCloud)
       float wx = pointCloud.vertices[i].position.x;
       float wy = pointCloud.vertices[i].position.y;
       float wz = pointCloud.vertices[i].position.z;
-      x.push_back(makeVector(wx, wy, wz, 1.f));
-      xp.push_back(makeVector(wx, wy, wz, 1.f));
+      if (wz != 0.f) {
+        x.push_back(makeVector(wx, wy, wz, 1.f));
+        xp.push_back(makeVector(wx, wy, wz, 1.f));
+      }
     }
   }
 }
@@ -43,7 +45,9 @@ void ICP::loadPointsY(PointCloud &pointCloud)
       float wx = pointCloud.vertices[i].position.x;
       float wy = pointCloud.vertices[i].position.y;
       float wz = pointCloud.vertices[i].position.z;
-      y.push_back(makeVector(wx, wy, wz, 1.f));
+      if (wz != 0.f) {
+        y.push_back(makeVector(wx, wy, wz, 1.f));
+      }
     }
   }
 }
