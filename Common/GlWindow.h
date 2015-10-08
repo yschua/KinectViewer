@@ -52,6 +52,7 @@ protected:
 
   static void timerCallback(int value);
   static void renderCallback();
+  static void mouseWheelFuncCallback(int, int, int, int);
   static void mouseFuncCallback(int button, int state, int x, int y);
   static void mouseMotionCallback(int x, int y);
   static void keyboardFuncCallback(unsigned char key, int xMouse, int yMouse);
