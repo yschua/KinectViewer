@@ -378,7 +378,6 @@ void GlWindow::cubeDemo(const UINT16 *depth)
     icp.computeTransformation();
   SE3<> transform = icp.getTransformation();
 
-
   Matrix<3> flipY;
   flipY[0] = makeVector(1, 0, 0);
   flipY[1] = makeVector(0, -1, 0);
