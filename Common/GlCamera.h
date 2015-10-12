@@ -5,17 +5,14 @@
 #include <glm\gtc\matrix_transform.hpp>
 
 // OpenGL Camera 
-class Camera {
+class GlCamera {
   glm::vec3 position;
   glm::vec3 viewDirection;
   glm::vec2 oldMousePosition;
-  glm::vec2 viewAngle;
   const glm::vec3 UP;
   const glm::vec3 RIGHT;
-  float yaw;
-  float pitch;
 public:
-  Camera();
+  GlCamera();
   void setMousePosition(int x, int y);
   void mouseRotateCamera(const glm::vec2& newMousePosition);
   void mouseMoveCamera(const glm::vec2& newMousePosition);

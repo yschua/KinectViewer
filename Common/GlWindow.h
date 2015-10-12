@@ -1,7 +1,7 @@
 #pragma once
 #include "Core\ShaderLoader.h"
 #include "Core\Timer.h"
-#include "Common\Camera.h"
+#include "Common\GlCamera.h"
 #include "Common\ModelGenerator.h"
 #include "Common\CubeGenerator.h"
 #include "Common\KinectCamera.h"

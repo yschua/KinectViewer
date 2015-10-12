@@ -24,9 +24,6 @@
     <ClCompile Include="Common\GlWindow.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="Common\Camera.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="Common\ModelGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
@@ -51,6 +48,9 @@
     <ClCompile Include="Common\CubeGenerator.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="Common\GlCamera.cpp">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="Core\ShaderLoader.h">
@@ -63,9 +63,6 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\GlWindow.h">
-      <Filter>Header Files</Filter>
-    </ClInclude>
-    <ClInclude Include="Common\Camera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\ModelGenerator.h">
@@ -93,6 +90,9 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="Common\CubeGenerator.h">
+      <Filter>Header Files</Filter>
+    </ClInclude>
+    <ClInclude Include="Common\GlCamera.h">
       <Filter>Header Files</Filter>
     </ClInclude>
   </ItemGroup>

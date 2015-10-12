@@ -81,7 +81,7 @@
     <None Include="packages.config" />
   </ItemGroup>
   <ItemGroup>
-    <ClCompile Include="Common\Camera.cpp" />
+    <ClCompile Include="Common\GlCamera.cpp" />
     <ClCompile Include="Core\ShaderLoader.cpp" />
     <ClCompile Include="Common\GlWindow.cpp" />
     <ClCompile Include="Common\KinectCamera.cpp" />
@@ -94,7 +94,7 @@
     <ClCompile Include="Main.cpp" />
   </ItemGroup>
   <ItemGroup>
-    <ClInclude Include="Common\Camera.h" />
+    <ClInclude Include="Common\GlCamera.h" />
     <ClInclude Include="Common\KinectCamera.h" />
     <ClInclude Include="Common\HuffmanCompressor.h" />
     <ClInclude Include="Common\ICP.h" />

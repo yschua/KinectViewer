@@ -1,7 +1,7 @@
 #include "GlWindow.h"
 
 GLuint program;
-Camera glCamera;
+GlCamera glCamera;
 KinectCamera kinectCamera;
 HuffmanCompressor huffman;
 StdHuffmanCompressor stdHuffman;
