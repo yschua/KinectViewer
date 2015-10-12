@@ -17,6 +17,7 @@ int middleButtonState;
 int compressionMode = 1;
 bool stdMode = true;
 bool flag = true;
+bool record = false;
 const int UNCOMPRESSED_SIZE = DEPTH_SIZE * 16 + COLOR_SIZE * 8;
 
 GlWindow::GlWindow(int argc, char *argv[])
@@ -131,23 +132,31 @@ void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
     huffman.compress(DEPTH_SIZE, depthDiffSend, depthTransmit);
     huffman.compress(COLOR_SIZE, colorDiffSend, colorTransmit);
 
-    huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
-    huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
+    //huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
+    //huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
   } else {
     drawText("2b. Standard Huffman (2 trees)", 0.f);
     
     stdHuffman.compress(DATA_DEPTH, depthDiffSend, depthTransmit);
     stdHuffman.compress(DATA_COLOR, colorDiffSend, colorTransmit);
 
-    stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
-    stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
+    //stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
+    //stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)(depthTransmit.size() + colorTransmit.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
 
+  if (record)
+    recordData((stdMode) ? "rhuffman1std.txt" : "rhuffman1.txt", compressionRatio);
+
   diffToData(depthDiffReceive, depthReceive);
   diffToData(colorDiffReceive, colorReceive);
+
+  for (int i = 0; i < DEPTH_SIZE; i++)
+    depthReceive[i] = depthSend[i];
+  for (int i = 0; i < COLOR_SIZE; i++)
+    colorReceive[i] = colorSend[i];
 }
 
 // Perform huffman compression on whole frame
@@ -164,18 +173,26 @@ void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
     drawText("3a. Huffman (1 tree)", 0.f);
 
     huffman.compress(FRAME_SIZE, combineDiffSend, transmitData);
-    huffman.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
+    //huffman.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
   } else {
     drawText("3b. Standard Huffman (1 tree)", 0.f);
 
     stdHuffman.compress(DATA_COMBINED, combineDiffSend, transmitData);
-    stdHuffman.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
+    //stdHuffman.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
 
+  if (record)
+    recordData((stdMode) ? "rhuffman2std.txt" : "rhuffman2.txt", compressionRatio);
+
   diffToData(combineDiffReceive, depthReceive, colorReceive);
+
+  for (int i = 0; i < DEPTH_SIZE; i++)
+    depthReceive[i] = depthSend[i];
+  for (int i = 0; i < COLOR_SIZE; i++)
+    colorReceive[i] = colorSend[i];
 }
 
 void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
@@ -208,20 +225,22 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
     drawText("4a. Huffman (difference frame)", 0.f);
 
     huffman.compress(FRAME_SIZE, frameDiffSend, transmitData);
-    huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
+    //huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
   } else {
     drawText("4b. Standard Huffman (difference frame)", 0.f);
 
     stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
     //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
-    for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
   }
+
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
-  std::ofstream file("framediff-compress-data.txt", std::ios::app);
-  file << compressionRatio << std::endl;
-  file.close();
+
+  if (record)
+    recordData((stdMode) ? "rframediffstd.txt" : "rframediff.txt", compressionRatio);
+
+  for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
 
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
@@ -275,17 +294,13 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   model.updatePointCloud(refDepthSend, refColorSend); // previous frame
   icp.loadPointsX(model.getPointCloud());
 
-  timer.startTimer();
   // Compute transformation
   icp.computeTransformation();
   SE3<> transform = icp.getTransformation();
-  timer.stopTimer();
-  //std::cout << "ICP: " << timer.getElapsedTime() << std::endl;
 
   drawText("Iterations: " + std::to_string(icp.getIterations()) + " Error: " + std::to_string(icp.getError()), 0.2f);
   displayTransform(transform, 0.3f);
 
-  timer.startTimer();
   // Apply transformation
   for (int i = 0; i < model.getPointCloud().numVertices; i++) {
     glm::vec3 world = model.getPointCloud().vertices[i].position;
@@ -297,8 +312,6 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
     estimatePtCloud.vertices[i] = { world, color };
   }
-  timer.stopTimer();
-  //std::cout << "Transform: " << timer.getElapsedTime() << std::endl;
 
   // Convert estimated world coordinates back to depth
   for (int i = 0; i < estimatePtCloud.vertices.size(); i++) {
@@ -336,9 +349,9 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
 
   float compressionRatio = (UNCOMPRESSED_SIZE + 16 * 32) / (float)(transmitData.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
-  std::ofstream file("icp-compress-data.txt", std::ios::app);
-  file << compressionRatio << std::endl;
-  file.close();
+
+  if (record)
+    recordData("ricp.txt", compressionRatio);
 
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
@@ -430,6 +443,13 @@ void GlWindow::drawText(std::string text, float offset)
     glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, text[i]);
 }
 
+void GlWindow::recordData(std::string filename, float value)
+{
+  std::ofstream file(filename, std::ios::app);
+  file << value << std::endl;
+  file.close();
+}
+
 void GlWindow::displayTransform(const SE3<> &transform, float offset)
 {
   drawText("Transformation:", offset);
@@ -467,14 +487,13 @@ void GlWindow::renderCallback()
   static BYTE *colorReceive = new BYTE[COLOR_SIZE];
 
   switch (compressionMode) {
-    case 1: {
+    case 1:
       drawText("1. No compression", 0.0f);
       for (int i = 0; i < DEPTH_SIZE; i++)
         depthReceive[i] = depthSend[i];
       for (int i = 0; i < COLOR_SIZE; i++)
         colorReceive[i] = colorSend[i];
       break;
-    }
     case 2:
       huffman1(depthSend, colorSend, depthReceive, colorReceive, stdMode);
       break;
@@ -487,7 +506,8 @@ void GlWindow::renderCallback()
     case 5:
       frameDiffICP(depthSend, colorSend, depthReceive, colorReceive);
       break;
-    default: break;
+    default:
+      break;
   }
 
   // Receiver computer renders received frame data
@@ -559,9 +579,6 @@ void GlWindow::mouseMotionCallback(int x, int y)
 void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
 {
   switch (key) {
-    case 'c': {
-      break;
-    }
     case ' ':
       glCamera.resetView();
       cube.reset();
@@ -574,7 +591,10 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
     case '6':
       compressionMode = key - '0';
       break;
-    case 'm':
+    case 'r':
+      record = true;
+      break;
+    case 's':
       stdMode = !stdMode;
       break;
     case 'f':

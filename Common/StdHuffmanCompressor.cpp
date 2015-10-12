@@ -11,7 +11,7 @@ StdHuffmanCompressor::StdHuffmanCompressor()
   //constructTable(DATA_COMBINED, combinedHistogram);
   //std::cout << "Finish combined table" << std::endl;
 
-  //loadTable();
+  loadTable();
   std::cout << "Huffman table loaded." << std::endl;
 }
 
