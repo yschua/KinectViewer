@@ -4,34 +4,42 @@
 
 GlWindow *glWindow;
 
+//struct Thing {
+//  int value;
+//  std::string code;
+//  int length;
+//
+//  Thing(int v, std::string c, int l) : value(v), code(c), length(l) {}
+//};
+//
+//bool myFunc(Thing a, Thing b) {
+//  if (a.length == b.length) {
+//    return abs(a.value) < abs(b.value);
+//  }
+//  return a.length < b.length;
+//}
+
 int main(int argc, char *argv[])
 {
   glWindow = new GlWindow(argc, argv);
   glWindow->show();
 
- // GlWindow glWindow(argc, argv);
- 
- // glWindow.show();
+  //std::ifstream file("maptbl-combined.txt", std::ios::in);
+  //int v;
+  //std::string c;
+  //std::vector<Thing> vec;
+  //while (file >> v >> c) {
+  //  vec.push_back(Thing(v, c, c.length()));
+  //}
+  //file.close();
 
-  /*Core::Timer timer;
-  KinectCamera kinectCamera;
-  HuffmanCompressor huffmanCompressor;
-  while (true) {
-    kinectCamera.update();
-    UINT16 *depth = kinectCamera.getDepthBuffer();
-    INT16 *diffData = kinectCamera.getDepthDifferential();
+  //std::sort(vec.begin(), vec.end(), myFunc);
 
-    //std::cout << thing[0] << std::endl;
-    if (depth[0] == 0) {
-      timer.startTimer();
-      huffmanCompressor.compress(512 * 424, diffData);
-      //huffmanCompressor.decompress();
-      timer.stopTimer();
-      std::cout << timer.getElapsedTime() / 1000 << " ms" << std::endl;
-      //std::cout << std::endl;
-    }
-  }*/
-
+  //std::ofstream ofile("maptbl-sorted.txt", std::ios::out);
+  //for (int i = 0; i < vec.size(); i++) {
+  //  ofile << vec[i].value << '\t' << vec[i].code << std::endl;
+  //}
+  //ofile.close();
 
   return 0;
 }

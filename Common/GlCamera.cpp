@@ -20,7 +20,8 @@ void GlCamera::mouseRotateCamera(const glm::vec2& newMousePosition)
   glm::vec2 mouseDelta = newMousePosition - oldMousePosition;
 
   viewDirection = glm::mat3(glm::rotate(mouseDelta.x / scale, -UP)) * viewDirection;
-  viewDirection = glm::mat3(glm::rotate(mouseDelta.y / scale, RIGHT)) * viewDirection;
+  viewDirection = glm::mat3(glm::rotate(mouseDelta.y / 
+scale, RIGHT)) * viewDirection;
 
   oldMousePosition = newMousePosition;
 }

@@ -132,16 +132,16 @@ void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
     huffman.compress(DEPTH_SIZE, depthDiffSend, depthTransmit);
     huffman.compress(COLOR_SIZE, colorDiffSend, colorTransmit);
 
-    //huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
-    //huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
+    huffman.decompress(DEPTH_SIZE, depthTransmit, depthDiffReceive);
+    huffman.decompress(COLOR_SIZE, colorTransmit, colorDiffReceive);
   } else {
     drawText("2b. Standard Huffman (2 trees)", 0.f);
     
     stdHuffman.compress(DATA_DEPTH, depthDiffSend, depthTransmit);
     stdHuffman.compress(DATA_COLOR, colorDiffSend, colorTransmit);
 
-    //stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
-    //stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
+    stdHuffman.decompress(DATA_DEPTH, depthTransmit, depthDiffReceive);
+    stdHuffman.decompress(DATA_COLOR, colorTransmit, colorDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)(depthTransmit.size() + colorTransmit.size());
@@ -153,10 +153,10 @@ void GlWindow::huffman1(const UINT16 *depthSend, const BYTE *colorSend,
   diffToData(depthDiffReceive, depthReceive);
   diffToData(colorDiffReceive, colorReceive);
 
-  for (int i = 0; i < DEPTH_SIZE; i++)
-    depthReceive[i] = depthSend[i];
-  for (int i = 0; i < COLOR_SIZE; i++)
-    colorReceive[i] = colorSend[i];
+  //for (int i = 0; i < DEPTH_SIZE; i++)
+  //  depthReceive[i] = depthSend[i];
+  //for (int i = 0; i < COLOR_SIZE; i++)
+  //  colorReceive[i] = colorSend[i];
 }
 
 // Perform huffman compression on whole frame
@@ -173,12 +173,12 @@ void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
     drawText("3a. Huffman (1 tree)", 0.f);
 
     huffman.compress(FRAME_SIZE, combineDiffSend, transmitData);
-    //huffman.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
+    huffman.decompress(FRAME_SIZE, transmitData, combineDiffReceive);
   } else {
     drawText("3b. Standard Huffman (1 tree)", 0.f);
 
     stdHuffman.compress(DATA_COMBINED, combineDiffSend, transmitData);
-    //stdHuffman.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
+    stdHuffman.decompress(DATA_COMBINED, transmitData, combineDiffReceive);
   }
 
   float compressionRatio = UNCOMPRESSED_SIZE / (float)transmitData.size();
@@ -189,10 +189,10 @@ void GlWindow::huffman2(const UINT16 *depthSend, const BYTE *colorSend,
 
   diffToData(combineDiffReceive, depthReceive, colorReceive);
 
-  for (int i = 0; i < DEPTH_SIZE; i++)
-    depthReceive[i] = depthSend[i];
-  for (int i = 0; i < COLOR_SIZE; i++)
-    colorReceive[i] = colorSend[i];
+  //for (int i = 0; i < DEPTH_SIZE; i++)
+  //  depthReceive[i] = depthSend[i];
+  //for (int i = 0; i < COLOR_SIZE; i++)
+  //  colorReceive[i] = colorSend[i];
 }
 
 void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
@@ -211,6 +211,8 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
     init = false;
   }
 
+  //for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
+
   int k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
     frameDiffSend[k] = limitDepth(depthSend[i]) - refFrameSend[k];
@@ -225,12 +227,12 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
     drawText("4a. Huffman (difference frame)", 0.f);
 
     huffman.compress(FRAME_SIZE, frameDiffSend, transmitData);
-    //huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
+    huffman.decompress(FRAME_SIZE, transmitData, frameDiffReceive);
   } else {
     drawText("4b. Standard Huffman (difference frame)", 0.f);
 
     stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-    //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+    stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
   }
 
 
@@ -240,7 +242,7 @@ void GlWindow::frameDiff(const UINT16 *depthSend, const BYTE *colorSend,
   if (record)
     recordData((stdMode) ? "rframediffstd.txt" : "rframediff.txt", compressionRatio);
 
-  for (int i = 0; i < FRAME_SIZE; i++) frameDiffReceive[i] = frameDiffSend[i];
+  
 
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
@@ -343,9 +345,13 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
     refColorSend[i] = colorSend[i];
   }
 
+  //for (int i = 0; i < FRAME_SIZE; i++) {
+  //  frameDiffReceive[i] = frameDiffSend[i];
+  //}
+
   Bitset transmitData;
   stdHuffman.compress(DATA_COMBINED, frameDiffSend, transmitData);
-  //stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
+  stdHuffman.decompress(DATA_COMBINED, transmitData, frameDiffReceive);
 
   float compressionRatio = (UNCOMPRESSED_SIZE + 16 * 32) / (float)(transmitData.size());
   drawText("Compress ratio: " + std::to_string(compressionRatio), 0.1f);
@@ -353,6 +359,9 @@ void GlWindow::frameDiffICP(const UINT16 *depthSend, const BYTE *colorSend,
   if (record)
     recordData("ricp.txt", compressionRatio);
 
+
+  // Take the transformation matrix, apply it to the reference frame to produce estimateDepth
+  // on the receiver, then add estimateDepth to the received delta frame.
   k = 0;
   for (int i = 0; i < DEPTH_SIZE; i++, k++) {
     depthReceive[i] = estimateDepth[i] + frameDiffReceive[k];
@@ -400,10 +409,11 @@ void GlWindow::cubeDemo(const UINT16 *depth)
   flipY[1] = makeVector(0, -1, 0);
   flipY[2] = makeVector(0, 0, 1);
   Matrix<3> mat = transform.get_rotation().get_matrix();
-  mat = flipY * mat * flipY;
-  transform.get_rotation() = SO3<>(mat);
-
-  transform.get_translation()[2] *= 2; // scale z displacement
+  if ((mat[0] ^ mat[1]) * mat[2] > 0) {
+    mat = flipY * mat * flipY;
+    transform.get_rotation() = SO3<>(mat);
+    transform.get_translation()[2] *= 2; // scale z displacement
+  }
 
   displayTransform(transform, 0.3f);
   icp.clear();
@@ -599,6 +609,9 @@ void GlWindow::keyboardFuncCallback(unsigned char key, int xMouse, int yMouse)
       break;
     case 'f':
       flag = !flag;
+      break;
+    case 'c':
+      system("pause");
       break;
     case 27: // ESC
       closeCallback();

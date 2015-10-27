@@ -62,6 +62,31 @@ void ModelGenerator::updatePointCloud(const UINT16 *depthBuffer, const BYTE *col
   glBufferData(GL_ARRAY_BUFFER, pointCloud.bufferSize(), &pointCloud.vertices[0], GL_DYNAMIC_DRAW);
 }
 
+// World coordinates have to be recalculated, color data is used as received
+void ModelGenerator::updatePointCloud(const UINT16 *depthBuffer, const BYTE *colorBuffer, const glm::vec3 color)
+{
+  int pointCloudIndex = 0;
+  for (int y = 0; y < HEIGHT; ++y) {
+    for (int x = 0; x < WIDTH; ++x) {
+      int depthIndex = (HEIGHT - 1 - y) * WIDTH + (WIDTH - 1 - x);
+      float depth = depthBuffer[depthIndex] / 1000.0f;
+      glm::vec3 worldCoordinate = glm::vec3(x, y, 1) * cameraParameters.depthIntrinsicInv * depth;
+
+      if (isnan(worldCoordinate.z)) {
+        pointCloud.vertices[pointCloudIndex] = { glm::vec3(0.0f, 0.0f, 0.0f), color };
+      } else {
+        float r = colorBuffer[depthIndex * 3] / 255.0f;
+        float g = colorBuffer[depthIndex * 3 + 1] / 255.0f;
+        float b = colorBuffer[depthIndex * 3 + 2] / 255.0f;
+        pointCloud.vertices[pointCloudIndex] = { glm::vec3(worldCoordinate.x, worldCoordinate.y, worldCoordinate.z), glm::vec3(r, g, b) };
+      }
+      pointCloudIndex++;
+    }
+  }
+  pointCloud.numVertices = pointCloud.vertices.size();
+  glBufferData(GL_ARRAY_BUFFER, pointCloud.bufferSize(), &pointCloud.vertices[0], GL_DYNAMIC_DRAW);
+}
+
 void ModelGenerator::loadModel()
 {
   // Vertex Buffer

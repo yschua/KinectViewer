@@ -60,10 +60,15 @@ void ICP::computeTransformation()
   float eps = 0.000001f;
   transformation = SE3<>();
 
+
+  if (x.empty() || xp.empty() || y.empty())
+    return;
+
   while (meanSquareError > eps && iterations < 5) {
     ++iterations;
     errorSum = 0.f;
     WLS<6> w;
+
 
     // For each transformed point estimate
     for (int i = 0; i < xp.size(); i++) {
